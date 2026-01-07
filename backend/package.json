@@ -1,0 +1,40 @@
+{
+  "name": "teacher-system-server",
+  "version": "1.0.0",
+  "description": "Backend server for primary school teacher system",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "train-models": "node scripts/trainModels.js",
+    "train-learning-paths": "node scripts/trainLearningPaths.js",
+    "create-schema": "node scripts/createSchema.js",
+    "add-users": "node scripts/addDefaultUsers.js",
+    "import-dataset": "node scripts/analyzeAndImport.js",
+    "assign-students": "node scripts/assignStudentsToTeacher.js",
+    "check-data": "node scripts/checkTeacherData.js",
+    "clear-db": "node scripts/clearDatabase.js",
+    "reset-db": "node scripts/resetDatabase.js"
+  },
+  "dependencies": {
+    "@tensorflow-models/mobilenet": "^2.1.1",
+    "@tensorflow/tfjs": "^4.11.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "natural": "^6.5.0",
+    "nodemailer": "^6.9.7",
+    "pg": "^8.11.3",
+    "sharp": "^0.32.6",
+    "xlsx": "^0.18.5"
+  },
+  "optionalDependencies": {
+    "@tensorflow/tfjs-node": "^4.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
