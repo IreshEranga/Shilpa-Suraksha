@@ -1,4 +1,3 @@
-// Mock teachers service
 export interface Teacher {
   id: string
   tid: string
