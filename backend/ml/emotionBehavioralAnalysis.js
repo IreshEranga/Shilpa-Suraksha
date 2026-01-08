@@ -1,6 +1,4 @@
-// Component 2: Emotion and Behavioral Analysis Module
 // Analyzes emotional indicators and behavioral patterns
-
 const db = require('../config/database');
 
 const emotionBehavioralAnalysis = async (data) => {
