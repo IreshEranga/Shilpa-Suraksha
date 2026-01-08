@@ -1,0 +1,13 @@
+{
+  "type": "mobilenet",
+  "imageSize": 224,
+  "embedding": "conv_preds",
+  "embeddingSize": 1280,
+  "classes": [
+    "angry",
+    "fear",
+    "happy",
+    "sad"
+  ],
+  "updatedAt": "2026-01-07T14:46:33.820Z"
+}
