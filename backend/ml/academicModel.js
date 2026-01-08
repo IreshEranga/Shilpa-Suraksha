@@ -63,7 +63,7 @@ const trainModel = async () => {
       GROUP BY student_id
     `);
 
-    // Get weak students (labeled data - you can adjust criteria)
+    // Get weak students (labeled data)
     const weakStudents = await db.query(`
       SELECT DISTINCT student_id 
       FROM weak_students
