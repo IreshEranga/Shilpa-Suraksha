@@ -1,0 +1,453 @@
+{
+  "version": 1,
+  "resources": [
+    {
+      "subject": "Mathematics",
+      "section": "Fractions",
+      "content": "භාග (Fractions) යනු සම්පූර්ණයක් කොටස්වලට බෙදා දැක්වීමයි. උදා: 1/2 කියන්නේ සම්පූර්ණයේ කොටස් 2කින් 1ක්. නාමකය (2) කොටස් ගණන, සංඛ්‍යාතය (1) කොටස් ගණන පෙන්වයි.",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Fractions",
+      "content": "සමාන භාග (Equivalent fractions): 1/2 = 2/4 = 3/6. එකම ප්‍රමාණය වෙනස් සංඛ්‍යා වලින් දැක්වීමයි. ඉහළ සහ පහළ දෙකම එකම සංඛ්‍යාවකින් ගුණ/බෙදුවහොත් සමාන භාග ලැබේ.",
+      "resource_type": "example",
+      "grade_level": 4
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Fractions",
+      "content": "භාග එකතු කිරීම (එකම නාමකය): 1/5 + 2/5 = 3/5. නාමකය එකම නිසා සංඛ්‍යාතයන් එකතු කර නාමකය එලෙසම තබන්න.",
+      "resource_type": "example",
+      "grade_level": 5
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Fractions",
+      "content": "ව්‍යායාම: (1) 3/8 + 2/8 = ? (2) 7/10 - 3/10 = ? (3) 1/4 සමාන භාග 3ක් ලියන්න. පිළිතුරු ලියන විට සරලතම ආකාරයට (simplify) කරන්න.",
+      "resource_type": "exercise",
+      "grade_level": 5
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Fractions",
+      "content": "භාග එකතු/අඩු කිරීම (විවිධ නාමකය): 1/3 + 1/6 = ? පළමුව නාමකයන්ගේ අවම පොදු ගුණාකාරය (LCM) සොයන්න. 3 සහ 6 හි LCM = 6. එවිට 1/3 = 2/6, 1/6 = 1/6. එබැවින් 2/6 + 1/6 = 3/6 = 1/2.",
+      "resource_type": "lesson",
+      "grade_level": 5
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Fractions",
+      "content": "භාග ගුණ කිරීම: (1/2) × (3/4) = 3/8. සංඛ්‍යාතයන් එකිනෙක ගුණ කර, නාමකයන් එකිනෙක ගුණ කරන්න. පිළිතුර සරල කරන්න.",
+      "resource_type": "example",
+      "grade_level": 5
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Decimals",
+      "content": "දශම (Decimals): දශම ලකුණට පසු අංකයන් දශම භාග වේ. උදා: 0.5 = 5/10 = 1/2. දශම සහ භාග අතර පරිවර්තනය ඉගෙනගන්න.",
+      "resource_type": "lesson",
+      "grade_level": 5
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Decimals",
+      "content": "දශම එකතු කිරීම: 2.5 + 3.7 = ? දශම ලකුණ යටින් යටින් තබා එකතු කරන්න. 2.5 + 3.7 = 6.2. දශම ස්ථාන ගණන සමාන කරන්න.",
+      "resource_type": "example",
+      "grade_level": 5
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Decimals",
+      "content": "දශම ගුණ කිරීම: 2.5 × 3 = 7.5. දශම ලකුණ නොසලකා ගුණ කර, පිළිතුරේ දශම ස්ථාන ගණන ගණන් කරන්න.",
+      "resource_type": "example",
+      "grade_level": 5
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Percentages",
+      "content": "ප්‍රතිශත (Percentages): 100 න් කොටසක්. 25% කියන්නේ 25/100 = 1/4. ප්‍රතිශත ↔ භාග ↔ දශම ලෙස පරිවර්තනය කරන්න.",
+      "resource_type": "lesson",
+      "grade_level": 6
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Percentages",
+      "content": "ප්‍රතිශත ගණනය: 50 න් 20% කීයද? 50 × 20/100 = 50 × 0.2 = 10. ව්‍යායාම: 80 න් 25% කීයද? 200 න් 15% කීයද?",
+      "resource_type": "exercise",
+      "grade_level": 6
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Addition",
+      "content": "එකතු කිරීම: අංක දෙකක් හෝ වැඩි ගණනක් එකතු කිරීම. දශක (tens) සහ ඒකක (ones) වෙන්කර එකතු කිරීමෙන් වැරදි අඩු කරගන්න.",
+      "resource_type": "lesson",
+      "grade_level": 2
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Addition",
+      "content": "එකතු කිරීමේ උදාහරණ: 23 + 15 = ? 3 + 5 = 8 (ඒකක), 2 + 1 = 3 (දශක). පිළිතුර: 38. ව්‍යායාම: 34 + 27, 45 + 38, 56 + 29.",
+      "resource_type": "example",
+      "grade_level": 2
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Subtraction",
+      "content": "අඩු කිරීම: එක් අංකයකින් තවත් අංකයක් අඩු කිරීම. ණය ගැනීම (borrowing) අවශ්‍ය වන්නේ කවදාද කියා හඳුනාගන්න.",
+      "resource_type": "lesson",
+      "grade_level": 2
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Subtraction",
+      "content": "ණය ගැනීම සමඟ අඩු කිරීම: 42 - 18 = ? 2 - 8 කළ නොහැක, එබැවින් දශකයෙන් ණය ගන්න. 12 - 8 = 4, 3 - 1 = 2. පිළිතුර: 24.",
+      "resource_type": "example",
+      "grade_level": 3
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Multiplication",
+      "content": "ගුණ කිරීම: එකම සංඛ්‍යාව නැවත නැවත එකතු කිරීම. 3 × 4 කියන්නේ 4 + 4 + 4. ගුණ වගුව (tables) 2-10 දක්වා පුහුණු කරන්න.",
+      "resource_type": "lesson",
+      "grade_level": 3
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Multiplication",
+      "content": "දෙකේ ගුණ වගුව: 2×1=2, 2×2=4, 2×3=6, 2×4=8, 2×5=10, 2×6=12, 2×7=14, 2×8=16, 2×9=18, 2×10=20. දිනපතා පුහුණු කරන්න.",
+      "resource_type": "exercise",
+      "grade_level": 3
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Division",
+      "content": "බෙදීම: ප්‍රමාණයක් සමාන කොටස්වලට බෙදා ගැනීම. 12 ÷ 3 = 4 කියන්නේ 12 කුඩා වශයෙන් 3 කණ්ඩායම් වලට බෙදාගත් විට එක් කණ්ඩායමට 4 බැගින්.",
+      "resource_type": "lesson",
+      "grade_level": 3
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Division",
+      "content": "බෙදීමේ උදාහරණ: 15 ÷ 3 = 5, 20 ÷ 4 = 5, 18 ÷ 6 = 3. ගුණ කිරීමේ ප්‍රතිලෝමය බෙදීමයි. ව්‍යායාම: 24 ÷ 4, 35 ÷ 5, 42 ÷ 7.",
+      "resource_type": "example",
+      "grade_level": 3
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Geometry",
+      "content": "ජ්‍යාමිතිය: ත්‍රිකෝණ, චතුරස්‍ර, වෘත්තය වැනි හැඩ තේරුම් ගන්න. පැති ගණන, කෝණ ගණන, සමාන පැති වැනි ලක්ෂණ හඳුනාගන්න.",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Geometry",
+      "content": "ත්‍රිකෝණ: පැති 3ක්, කෝණ 3ක්. ත්‍රිකෝණයක කෝණ එකතුව 180° වේ. සමපාර්ශ්වික (සමාන පැති), සමද්විපාර්ශ්වික (පැති 2ක් සමාන), විවිධ පැති ත්‍රිකෝණ.",
+      "resource_type": "example",
+      "grade_level": 4
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Area and Perimeter",
+      "content": "වර්ගඵලය (Area): හැඩයක තලයේ ප්‍රමාණය. චතුරස්‍රයක වර්ගඵලය = දිග × පළල. උදා: 5cm × 3cm = 15 cm².",
+      "resource_type": "lesson",
+      "grade_level": 5
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Area and Perimeter",
+      "content": "පරිමිතිය (Perimeter): හැඩයක සියලු පැතිවල දිග එකතුව. චතුරස්‍රයක පරිමිතිය = 2 × (දිග + පළල). උදා: 5cm × 3cm චතුරස්‍රයේ පරිමිතිය = 2 × (5+3) = 16cm.",
+      "resource_type": "example",
+      "grade_level": 5
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Time",
+      "content": "වේලාව (Time): පැය (hour), මිනිත්තු (minute), තත්පර (second). 1 පැය = 60 මිනිත්තු, 1 මිනිත්තු = 60 තත්පර. වේලාව කියවීම, එකතු/අඩු කිරීම පුහුණු කරන්න.",
+      "resource_type": "lesson",
+      "grade_level": 3
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Time",
+      "content": "වේලාව ගණනය: 2 පැය 30 මිනිත්තු + 1 පැය 45 මිනිත්තු = ? මිනිත්තු එකතු: 30+45=75. 75 = 1 පැය 15 මිනිත්තු. පිළිතුර: 4 පැය 15 මිනිත්තු.",
+      "resource_type": "example",
+      "grade_level": 4
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Money",
+      "content": "මුදල් (Money): රුපියල් (Rs), සත (cents). 100 සත = 1 රුපියල්. මුදල් එකතු/අඩු කිරීම, පරිවර්තනය පුහුණු කරන්න.",
+      "resource_type": "lesson",
+      "grade_level": 3
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Word Problems",
+      "content": "වචන ගැටලු (Word Problems): කියවා තේරුම් ගෙන, ගණිතමය ක්‍රියාව හඳුනාගෙන, විසඳන්න. ප්‍රශ්නයේ අවශ්‍ය දත්ත හඳුනාගන්න.",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Word Problems",
+      "content": "වචන ගැටලු උදාහරණ: 'රුහාන්ට රුපියල් 50ක් තිබුණා. ඔහු රුපියල් 25ක් වියදම් කළා. ඔහුට කොපමණ මුදලක් ඉතිරිව තිබේද?' විසඳුම: 50 - 25 = 25 රුපියල්.",
+      "resource_type": "example",
+      "grade_level": 4
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Measurement",
+      "content": "මාපක (Measurement): දිග (cm, m), බර (g, kg), වේලාව (min, hour) වැනි ඒකක භාවිතා කරන්න. ඒකක පරිවර්තන පුහුණු කරන්න (100 cm = 1 m).",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "Mathematics",
+      "section": "Measurement",
+      "content": "දිග මැනීම: 1 m = 100 cm, 1 km = 1000 m. උදා: 2 m 50 cm = 250 cm. ව්‍යායාම: 3 m = ? cm, 500 cm = ? m, 2 km = ? m.",
+      "resource_type": "exercise",
+      "grade_level": 4
+    },
+    {
+      "subject": "Science",
+      "section": "Plants",
+      "content": "වෘක්ෂ සහ පැළෑටි: මුල්, කඳ, පත්‍ර, මල්, ගෙඩි යන කොටස් හා ඒවායේ කාර්යය ඉගෙනගන්න. පත්‍ර ආහාර නිපදවයි (photosynthesis).",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "Science",
+      "section": "Plants",
+      "content": "පැළෑටි වර්ග: ගස්, පඳුරු, වල් පැළෑටි, ආහාර පැළෑටි. එක් එක් වර්ගයේ ලක්ෂණ හා භාවිතයන් හඳුනාගන්න. පරිසරයට පැළෑටිවල වැදගත්කම.",
+      "resource_type": "example",
+      "grade_level": 4
+    },
+    {
+      "subject": "Science",
+      "section": "Animals",
+      "content": "සතුන්: සත්ව වර්ග (මාංශ භක්ෂක, ශාක භක්ෂක, සර්ව භක්ෂක), ජලජ, භූමි, ගුවන් සතුන්. සතුන්ගේ ආහාර, වාසස්ථාන, ලක්ෂණ ඉගෙනගන්න.",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "Science",
+      "section": "Animals",
+      "content": "සතුන්ගේ කොටස්: හිස, ශරීරය, පාද, වලිගය. සමහර සතුන්ට අං, පිහාටු, අංකුර ඇත. සතුන්ගේ ආහාර රටාවන් හා ජීවන රටාවන්.",
+      "resource_type": "example",
+      "grade_level": 3
+    },
+    {
+      "subject": "Science",
+      "section": "Human Body",
+      "content": "මානව ශරීරය: හිස, බඳ, අත්, පාද වැනි කොටස්. අභ්‍යන්තර අවයව: හෘදය, පෙනහැලි, මොළය, අක්මාව. එක් එක් අවයවයේ කාර්යය.",
+      "resource_type": "lesson",
+      "grade_level": 5
+    },
+    {
+      "subject": "Science",
+      "section": "Human Body",
+      "content": "ශරීර කොටස්: හිස (මොළය, ඇස්, කන, නාසය, මුඛය), බඳ (හෘදය, පෙනහැලි, අක්මාව), අත්-පාද. සෑම කොටසකම වැදගත්කම.",
+      "resource_type": "example",
+      "grade_level": 4
+    },
+    {
+      "subject": "Science",
+      "section": "Water Cycle",
+      "content": "ජල චක්‍රය: වාෂ්පීභවනය → ඝනීභවනය → වර්ෂාව → ජලය එකතුවීම. සරල රූපයකින් පියවර හතර දැක්විය හැක.",
+      "resource_type": "lesson",
+      "grade_level": 5
+    },
+    {
+      "subject": "Science",
+      "section": "Water Cycle",
+      "content": "ජල චක්‍රයේ පියවර: (1) වාෂ්පීභවනය - ජලය වාෂ්ප වීම, (2) ඝනීභවනය - වාෂ්පය වලාකුළු වීම, (3) වර්ෂාව - වලාකුළුවලින් වැස්ස, (4) ජලය එකතුවීම - මුහුදු, ගංගා වලට.",
+      "resource_type": "example",
+      "grade_level": 5
+    },
+    {
+      "subject": "Science",
+      "section": "Weather",
+      "content": "කාලගුණය: හිරු, වර්ෂාව, සුළං, වළාකුළු, උෂ්ණත්වය. කාලගුණයේ වර්ග: හිරු ඇති, වැසි, සුළං, සීතල, උණුසුම්. කාලගුණය මැනීමේ උපකරණ.",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "Science",
+      "section": "Solar System",
+      "content": "සූර්‍ය මණ්ඩලය: හිරු, ග්‍රහලෝක 8 (බුධ, ශුක්‍ර, පෘථිවි, අඟහරු, ගුරු, ශනි, යුරේනස්, නෙප්චූන්), චන්ද්‍රයා, ග්‍රහක. පෘථිවිය ග්‍රහලෝකයක් වන අතර ජීවයට සුදුසුය.",
+      "resource_type": "lesson",
+      "grade_level": 5
+    },
+    {
+      "subject": "Science",
+      "section": "Matter",
+      "content": "ද්‍රව්‍ය: ඝන, ද්‍රව, වායු යන තත්ව 3ක්. උදා: ඝන - ගල, ද්‍රව - ජලය, වායු - වාතය. තත්වයන් අතර වෙනස්වීම: දියවීම, ඝනීභවනය, වාෂ්පීභවනය.",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "English",
+      "section": "Grammar - Nouns",
+      "content": "Nouns: a noun is a naming word (person/place/thing). Examples: teacher, school, book. Practice: underline nouns in 5 sentences.",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "English",
+      "section": "Grammar - Nouns",
+      "content": "Nouns types: Common nouns (dog, city), Proper nouns (Colombo, John - start with capital), Collective nouns (team, flock). Exercise: Identify noun types in given sentences.",
+      "resource_type": "example",
+      "grade_level": 5
+    },
+    {
+      "subject": "English",
+      "section": "Grammar - Verbs",
+      "content": "Verbs: action words. Examples: run, write, learn. Practice: fill in the blanks with correct verbs (present/past).",
+      "resource_type": "exercise",
+      "grade_level": 4
+    },
+    {
+      "subject": "English",
+      "section": "Grammar - Verbs",
+      "content": "Verb tenses: Present (I walk), Past (I walked), Future (I will walk). Regular verbs add -ed for past. Irregular verbs change form (go→went, see→saw). Practice: Write past tense of 10 verbs.",
+      "resource_type": "lesson",
+      "grade_level": 5
+    },
+    {
+      "subject": "English",
+      "section": "Grammar - Adjectives",
+      "content": "Adjectives: words that describe nouns. Examples: big, small, happy, red. 'The big dog' - big describes dog. Practice: Add adjectives to 5 nouns.",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "English",
+      "section": "Grammar - Adverbs",
+      "content": "Adverbs: words that describe verbs. Often end with -ly. Examples: quickly, slowly, happily. 'She runs quickly' - quickly describes runs. Practice: Add adverbs to 5 sentences.",
+      "resource_type": "lesson",
+      "grade_level": 5
+    },
+    {
+      "subject": "English",
+      "section": "Vocabulary",
+      "content": "Vocabulary building: Learn 5 new words daily. Write word, meaning, sentence. Use dictionary. Practice: Write 10 new words with meanings and use each in a sentence.",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "English",
+      "section": "Reading",
+      "content": "Reading comprehension: Read passage carefully. Answer questions using information from passage. Identify main idea. Practice: Read short story and answer 5 questions.",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "English",
+      "section": "Writing",
+      "content": "Writing sentences: Start with capital letter, end with full stop. Subject + verb + object. Example: 'The cat sat on the mat.' Practice: Write 5 sentences about your school.",
+      "resource_type": "lesson",
+      "grade_level": 3
+    },
+    {
+      "subject": "English",
+      "section": "Writing",
+      "content": "Paragraph writing: Topic sentence, supporting sentences, concluding sentence. Write about one main idea. Practice: Write a paragraph (5-7 sentences) about 'My Family'.",
+      "resource_type": "exercise",
+      "grade_level": 5
+    },
+    {
+      "subject": "Sinhala",
+      "section": "Reading Comprehension",
+      "content": "කථා පාඨයක් කියවා අර්ථය තේරුම් ගන්න. ප්‍රශ්න වලට පිළිතුරු ලියන විට පාඨයෙන් සාධක යොදාගන්න. අර්ථ නොදන්නා වචන සටහන් කර ශබ්දකෝෂයෙන් බලන්න.",
+      "resource_type": "lesson",
+      "grade_level": 5
+    },
+    {
+      "subject": "Sinhala",
+      "section": "Reading Comprehension",
+      "content": "කියවීමේ කුසලතා: පාඨය කියවා ප්‍රධාන අදහස හඳුනාගන්න. විස්තර, හේතු, ප්‍රතිඵල හඳුනාගන්න. ප්‍රශ්න වලට නිවැරදි පිළිතුරු ලියන්න. ව්‍යායාම: කෙටි කථාවක් කියවා ප්‍රශ්න 5කට පිළිතුරු.",
+      "resource_type": "exercise",
+      "grade_level": 5
+    },
+    {
+      "subject": "Sinhala",
+      "section": "Spelling",
+      "content": "අක්ෂර වින්‍යාසය: සමාන ශබ්ද ඇති වචන නිවැරදිව ලියන්න. වචන කට්ටලයක් (10ක්) තෝරා දිනපතා ලියමින් පුහුණු වන්න.",
+      "resource_type": "exercise",
+      "grade_level": 3
+    },
+    {
+      "subject": "Sinhala",
+      "section": "Grammar - විභක්ති",
+      "content": "විභක්ති: නාම පදවලට එකතු වන ප්‍රත්‍යයන්. උදා: කර්ම (ට, ට), කරණ (ඉන්, නින්), සම්ප්‍රදාන (ට, හට). ව්‍යායාම: විභක්ති සමඟ වාක්‍ය 5ක් ලියන්න.",
+      "resource_type": "lesson",
+      "grade_level": 5
+    },
+    {
+      "subject": "Sinhala",
+      "section": "Grammar - ක්‍රියා",
+      "content": "ක්‍රියා පද: ක්‍රියාවක් දක්වන පද. වර්තමාන (කරනවා), අතීත (කළා), අනාගත (කරනවා). ව්‍යායාම: ක්‍රියා පද සමඟ වාක්‍ය 5ක් ලියන්න.",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "Sinhala",
+      "section": "Poetry",
+      "content": "කවි: පද්‍යයේ රටා, යමක, අන්ත යමක. සරල කවි කියවා අර්ථය තේරුම් ගන්න. ව්‍යායාම: කෙටි කවියක් කියවා අර්ථය ලියන්න.",
+      "resource_type": "lesson",
+      "grade_level": 5
+    },
+    {
+      "subject": "Sinhala",
+      "section": "Essay Writing",
+      "content": "රචනා: හැඳින්වීම, ශරීරය (විස්තර), අවසානය. එක් මාතෘකාවක් ගැන ලියන්න. ව්‍යායාම: 'මගේ පාසල' ගැන රචනාවක් (5-7 වාක්‍ය) ලියන්න.",
+      "resource_type": "lesson",
+      "grade_level": 5
+    },
+    {
+      "subject": "Environmental Studies",
+      "section": "Environment",
+      "content": "පරිසරය: අප වටා ඇති සියල්ල - ගස්, සතුන්, ජලය, වාතය. පරිසරය ආරක්ෂා කිරීම වැදගත්. ව්‍යායාම: පරිසරය ආරක්ෂා කිරීමට කළ හැකි දේවල් 5ක් ලියන්න.",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "Environmental Studies",
+      "section": "Pollution",
+      "content": "මූලික දූෂණය: වාත, ජල, ශබ්ද දූෂණය. දූෂණයේ හේතු හා බලපෑම්. දූෂණය අඩු කිරීමේ ක්‍රම. ව්‍යායාම: දූෂණය අඩු කිරීමට කළ හැකි දේවල් ලියන්න.",
+      "resource_type": "lesson",
+      "grade_level": 5
+    },
+    {
+      "subject": "Environmental Studies",
+      "section": "Conservation",
+      "content": "සංරක්ෂණය: ජලය, විදුලිය, කඩදාසි ඉතිරි කිරීම. ප්‍රතිචක්‍රීකරණය. ව්‍යායාම: ඔබගේ නිවසේ සංරක්ෂණය කළ හැකි දේවල් 5ක් ලියන්න.",
+      "resource_type": "exercise",
+      "grade_level": 4
+    },
+    {
+      "subject": "Social Studies",
+      "section": "Our Country",
+      "content": "ශ්‍රී ලංකාව: දිවයින, පළාත් 9, දිස්ත්‍රික්ක 25. අගනුවර: ශ්‍රී ජයවර්ධනපුර කෝට්ටේ. ප්‍රධාන නගර: කොළඹ, කැන්ඩි, ගාල්ල. ජනගහණය, භාෂා, ආගම්.",
+      "resource_type": "lesson",
+      "grade_level": 4
+    },
+    {
+      "subject": "Social Studies",
+      "section": "History",
+      "content": "ඉතිහාසය: පුරාණ ශ්‍රී ලංකාව, රජවරු, පැරණි නගර (අනුරාධපුර, පොළොන්නරුව). ව්‍යායාම: පුරාණ නගර 3ක් හා ඒවායේ වැදගත්කම ලියන්න.",
+      "resource_type": "lesson",
+      "grade_level": 5
+    },
+    {
+      "subject": "Social Studies",
+      "section": "Culture",
+      "content": "සංස්කෘතිය: නැටුම්, සංගීතය, ආගමික උත්සව, ආහාර, ඇඳුම්. ශ්‍රී ලංකාවේ සංස්කෘතික උරුමය. ව්‍යායාම: ඔබගේ ප්‍රදේශයේ සංස්කෘතික උත්සව ගැන ලියන්න.",
+      "resource_type": "lesson",
+      "grade_level": 4
+    }
+  ]
+}
