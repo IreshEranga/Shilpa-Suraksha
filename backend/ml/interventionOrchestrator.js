@@ -1,6 +1,4 @@
-// Component 4: Intervention Orchestrator with Student Clustering
 // Clusters students and suggests group/individual interventions
-
 const db = require('../config/database');
 
 // Simple K-means clustering implementation

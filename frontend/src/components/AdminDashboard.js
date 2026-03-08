@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import './AdminDashboard.css';
 
 const AdminDashboard = ({ user, onLogout }) => {
-  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -235,7 +233,7 @@ const TeacherManagement = ({ teachers, onRefresh, user }) => {
           email: formData.email,
           class_id: formData.class_id || null
         };
-        
+
         // If no class_id is selected but grade is provided, send grade to create new class
         if (!formData.class_id && formData.grade) {
           updateData.grade = parseInt(formData.grade);
@@ -437,7 +435,7 @@ const TeacherManagement = ({ teachers, onRefresh, user }) => {
 };
 
 // Student Management Component
-const StudentManagement = ({ user }) => {
+const StudentManagement = () => {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -540,7 +538,6 @@ const StudentManagement = ({ user }) => {
       formData.append('file', uploadFile);
       formData.append('class_id', uploadClassId);
 
-      // Don't set Content-Type manually - axios will set it with boundary automatically
       const res = await api.post('/admin/students/upload', formData);
 
       alert(res.data.message || `Import complete: ${res.data.imported} imported, ${res.data.skipped} skipped`);
@@ -566,6 +563,13 @@ const StudentManagement = ({ user }) => {
       setUploading(false);
     }
   };
+
+  // Sorting students incrementally by student_id
+  const sortedStudents = [...students].sort((a, b) => {
+    const idA = String(a.student_id || '');
+    const idB = String(b.student_id || '');
+    return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+  });
 
   if (loading) return <div className="loading">Loading...</div>;
 
@@ -683,14 +687,14 @@ const StudentManagement = ({ user }) => {
             </tr>
           </thead>
           <tbody>
-            {students.length === 0 ? (
+            {sortedStudents.length === 0 ? (
               <tr>
                 <td colSpan="7" style={{ textAlign: 'center', padding: '20px' }}>
                   No students found. Upload students or they will be imported from the dataset.
                 </td>
               </tr>
             ) : (
-              students.map(student => (
+              sortedStudents.map(student => (
                 <tr key={student.id}>
                   <td>
                     <input
@@ -742,125 +746,8 @@ const StudentManagement = ({ user }) => {
   );
 };
 
-// School Profile Component
-const SchoolProfile = ({ user }) => {
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [formData, setFormData] = useState({});
-
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
-      const res = await api.get('/admin/school-profile');
-      setProfile(res.data);
-      setFormData(res.data);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      await api.put('/admin/school-profile', formData);
-      setEditing(false);
-      fetchProfile();
-      alert('Profile updated successfully');
-    } catch (error) {
-      alert('Error updating profile');
-    }
-  };
-
-  if (loading) return <div>Loading...</div>;
-
-  return (
-    <div className="tab-content">
-      <div className="card">
-        <div className="card-header">
-          <h2>School Profile</h2>
-          <button 
-            onClick={() => editing ? handleSave() : setEditing(true)}
-            className="btn btn-primary"
-          >
-            {editing ? 'Save' : 'Edit'}
-          </button>
-        </div>
-
-        <div className="profile-form">
-          <div className="form-group">
-            <label>School Name</label>
-            <input
-              type="text"
-              className="input"
-              value={formData.name || ''}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              disabled={!editing}
-            />
-          </div>
-          <div className="form-group">
-            <label>Registration Number</label>
-            <input
-              type="text"
-              className="input"
-              value={formData.registration_number || ''}
-              disabled
-            />
-          </div>
-          <div className="form-group">
-            <label>Address</label>
-            <textarea
-              className="input"
-              value={formData.address || ''}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              disabled={!editing}
-              rows="3"
-            />
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Phone</label>
-              <input
-                type="tel"
-                className="input"
-                value={formData.phone || ''}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                disabled={!editing}
-              />
-            </div>
-            <div className="form-group">
-              <label>Email</label>
-              <input
-                type="email"
-                className="input"
-                value={formData.email || ''}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                disabled={!editing}
-              />
-            </div>
-          </div>
-          <div className="form-group">
-            <label>Principal Name</label>
-            <input
-              type="text"
-              className="input"
-              value={formData.principal_name || ''}
-              onChange={(e) => setFormData({ ...formData, principal_name: e.target.value })}
-              disabled={!editing}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Class Management Component
-const ClassManagement = ({ user, teachers, onRefresh }) => {
+const ClassManagement = ({ teachers, onRefresh }) => {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -889,7 +776,7 @@ const ClassManagement = ({ user, teachers, onRefresh }) => {
     fetchClasses();
   }, []);
 
-  // Refresh classes when teachers list changes (e.g., after creating teacher with grade)
+  // Refresh classes when teachers list changes
   useEffect(() => {
     fetchClasses();
   }, [teachers]);
@@ -935,7 +822,7 @@ const ClassManagement = ({ user, teachers, onRefresh }) => {
       await api.delete(`/admin/classes/${id}`);
       alert('Class deleted successfully!');
       await fetchClasses();
-      if (onRefresh) onRefresh(); // Refresh teachers list if callback provided
+      if (onRefresh) onRefresh(); 
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to delete class');
     }
@@ -1065,5 +952,119 @@ const ClassManagement = ({ user, teachers, onRefresh }) => {
   );
 };
 
-export default AdminDashboard;
+// School Profile Component
+const SchoolProfile = () => {
+  const [formData, setFormData] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
 
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const res = await api.get('/admin/school-profile');
+      setFormData(res.data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      await api.put('/admin/school-profile', formData);
+      setEditing(false);
+      fetchProfile();
+      alert('Profile updated successfully');
+    } catch (error) {
+      alert('Error updating profile');
+    }
+  };
+
+  if (loading) return <div>Loading...</div>;
+
+  return (
+    <div className="tab-content">
+      <div className="card">
+        <div className="card-header">
+          <h2>School Profile</h2>
+          <button 
+            onClick={() => editing ? handleSave() : setEditing(true)}
+            className="btn btn-primary"
+          >
+            {editing ? 'Save' : 'Edit'}
+          </button>
+        </div>
+
+        <div className="profile-form">
+          <div className="form-group">
+            <label>School Name</label>
+            <input
+              type="text"
+              className="input"
+              value={formData.name || ''}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              disabled={!editing}
+            />
+          </div>
+          <div className="form-group">
+            <label>Registration Number</label>
+            <input
+              type="text"
+              className="input"
+              value={formData.registration_number || ''}
+              disabled
+            />
+          </div>
+          <div className="form-group">
+            <label>Address</label>
+            <textarea
+              className="input"
+              value={formData.address || ''}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              disabled={!editing}
+              rows="3"
+            />
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Phone</label>
+              <input
+                type="tel"
+                className="input"
+                value={formData.phone || ''}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                disabled={!editing}
+              />
+            </div>
+            <div className="form-group">
+              <label>Email</label>
+              <input
+                type="email"
+                className="input"
+                value={formData.email || ''}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                disabled={!editing}
+              />
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Principal Name</label>
+            <input
+              type="text"
+              className="input"
+              value={formData.principal_name || ''}
+              onChange={(e) => setFormData({ ...formData, principal_name: e.target.value })}
+              disabled={!editing}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;
