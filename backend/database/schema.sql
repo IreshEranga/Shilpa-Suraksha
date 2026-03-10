@@ -165,6 +165,8 @@ CREATE TABLE IF NOT EXISTS intervention_history (
     cluster_id INTEGER REFERENCES student_clusters(id),
     intervention_type VARCHAR(50) CHECK (intervention_type IN ('individual', 'group')),
     activity_description TEXT,
+    source_suggestion JSONB,
+    assigned_by INTEGER,
     start_date DATE,
     end_date DATE,
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'completed', 'paused', 'cancelled')),
@@ -227,6 +229,13 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='teachers' AND column_name='last_login_at') THEN
         ALTER TABLE teachers ADD COLUMN last_login_at TIMESTAMP;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='intervention_history' AND column_name='source_suggestion') THEN
+        ALTER TABLE intervention_history ADD COLUMN source_suggestion JSONB;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='intervention_history' AND column_name='assigned_by') THEN
+        ALTER TABLE intervention_history ADD COLUMN assigned_by INTEGER;
     END IF;
 EXCEPTION WHEN OTHERS THEN
     -- Ignore errors if columns already exist or other issues

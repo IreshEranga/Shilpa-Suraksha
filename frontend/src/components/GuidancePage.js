@@ -1,15 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import api from '../utils/api';
-import TeacherNavbar from './shared/TeacherNavbar';
-import './GuidancePage.css';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import api from "../utils/api";
+import TeacherNavbar from "./shared/TeacherNavbar";
+import "./GuidancePage.css";
 
 const GuidancePage = ({ user, onLogout }) => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [expanded, setExpanded] = useState(() => new Set());
-  const [pathModal, setPathModal] = useState({ open: false, student: null, weak_subject: '', weak_section: '' });
+  const [pathModal, setPathModal] = useState({
+    open: false,
+    student: null,
+    weak_subject: "",
+    weak_section: "",
+  });
 
   useEffect(() => {
     fetchAtRiskStudents();
@@ -17,10 +22,10 @@ const GuidancePage = ({ user, onLogout }) => {
 
   const fetchAtRiskStudents = async () => {
     try {
-      const res = await api.get('/components/guidance-page');
+      const res = await api.get("/components/guidance-page");
       setStudents(res.data.students);
     } catch (error) {
-      console.error('Error fetching at-risk students:', error);
+      console.error("Error fetching at-risk students:", error);
     } finally {
       setLoading(false);
     }
@@ -28,7 +33,7 @@ const GuidancePage = ({ user, onLogout }) => {
 
   const normalizeRiskFactors = (riskFactors) => {
     if (!riskFactors) return null;
-    if (typeof riskFactors === 'string') {
+    if (typeof riskFactors === "string") {
       try {
         return JSON.parse(riskFactors);
       } catch {
@@ -40,11 +45,15 @@ const GuidancePage = ({ user, onLogout }) => {
 
   const formatPercent = (v) => {
     const n = Number(v);
-    if (!Number.isFinite(n)) return '-';
+    if (!Number.isFinite(n)) return "-";
     return `${(n * 100).toFixed(1)}%`;
   };
 
-  const toTitle = (s) => (s || '').toString().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const toTitle = (s) =>
+    (s || "")
+      .toString()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
 
   const renderRiskDetails = (student) => {
     const rf = normalizeRiskFactors(student.risk_factors);
@@ -65,10 +74,15 @@ const GuidancePage = ({ user, onLogout }) => {
           <ul className="risk-list">
             {entries.map(([k, v]) => {
               const key = toTitle(k);
-              const value = Array.isArray(v) ? v.join(', ') : (typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v));
+              const value = Array.isArray(v)
+                ? v.join(", ")
+                : typeof v === "object" && v !== null
+                  ? JSON.stringify(v)
+                  : String(v);
               return (
                 <li key={k}>
-                  <span className="risk-k">{key}:</span> <span className="risk-v">{value}</span>
+                  <span className="risk-k">{key}:</span>{" "}
+                  <span className="risk-v">{value}</span>
                 </li>
               );
             })}
@@ -89,52 +103,66 @@ const GuidancePage = ({ user, onLogout }) => {
 
     return (
       <div className="risk-details">
-        {renderBlock('Academic', academic)}
-        {renderBlock('Attendance', attendance)}
-        {renderBlock('Behavioral', behavioral)}
+        {renderBlock("Academic", academic)}
+        {renderBlock("Attendance", attendance)}
+        {renderBlock("Behavioral", behavioral)}
         {/* Any extra keys */}
-        {Object.keys(rf).filter(k => !['academic', 'attendance', 'behavioral'].includes(k)).map((k) => (
-          <div className="risk-block" key={k}>
-            <div className="risk-block-title">{toTitle(k)}</div>
-            <div className="risk-raw">{typeof rf[k] === 'string' ? rf[k] : JSON.stringify(rf[k], null, 2)}</div>
-          </div>
-        ))}
+        {Object.keys(rf)
+          .filter((k) => !["academic", "attendance", "behavioral"].includes(k))
+          .map((k) => (
+            <div className="risk-block" key={k}>
+              <div className="risk-block-title">{toTitle(k)}</div>
+              <div className="risk-raw">
+                {typeof rf[k] === "string"
+                  ? rf[k]
+                  : JSON.stringify(rf[k], null, 2)}
+              </div>
+            </div>
+          ))}
       </div>
     );
   };
 
   const openGeneratePath = (student) => {
-    setPathModal({ open: true, student, weak_subject: '', weak_section: '' });
+    setPathModal({ open: true, student, weak_subject: "", weak_section: "" });
   };
 
   const submitGeneratePath = async () => {
     const student = pathModal.student;
-    const weakSubject = (pathModal.weak_subject || '').trim();
-    const weakSection = (pathModal.weak_section || '').trim();
+    const weakSubject = (pathModal.weak_subject || "").trim();
+    const weakSection = (pathModal.weak_section || "").trim();
     if (!student || !weakSubject || !weakSection) return;
 
     try {
       // Use the new personalized learning path endpoint
       await api.post(`/learning-paths/personalized/${student.id}`, {
         weak_subject: weakSubject,
-        weak_section: weakSection
+        weak_section: weakSection,
       });
-      alert('Personalized learning path generated successfully!');
+      alert("Personalized learning path generated successfully!");
       // Optionally redirect to learning paths page
-      window.location.href = '/teacher/learning-paths';
+      window.location.href = "/teacher/learning-paths";
     } catch (error) {
-      console.error('Error generating learning path:', error);
-      alert('Error generating learning path: ' + (error.response?.data?.error || error.message));
+      console.error("Error generating learning path:", error);
+      alert(
+        "Error generating learning path: " +
+          (error.response?.data?.error || error.message),
+      );
     }
   };
 
   const getRiskBadgeClass = (riskLevel) => {
     switch (riskLevel) {
-      case 'critical': return 'badge-critical';
-      case 'high': return 'badge-high';
-      case 'medium': return 'badge-medium';
-      case 'low': return 'badge-low';
-      default: return 'badge-low';
+      case "critical":
+        return "badge-critical";
+      case "high":
+        return "badge-high";
+      case "medium":
+        return "badge-medium";
+      case "low":
+        return "badge-low";
+      default:
+        return "badge-low";
     }
   };
 
@@ -151,16 +179,23 @@ const GuidancePage = ({ user, onLogout }) => {
           <div className="card-header">
             <div>
               <h2>At-Risk Students</h2>
-              <p className="subtitle">Students flagged by Early Warning / Emotion & Behavioral analysis</p>
+              <p className="subtitle">
+                Students flagged by Early Warning / Emotion & Behavioral
+                analysis
+              </p>
             </div>
-            <button 
+            <button
               onClick={async () => {
                 setRunning(true);
                 try {
-                  await api.post('/components/early-warning');
+                  await api.post("/components/early-warning");
                   await fetchAtRiskStudents();
                 } catch (e) {
-                  alert(e.response?.data?.error || e.message || 'Failed to run analysis');
+                  alert(
+                    e.response?.data?.error ||
+                      e.message ||
+                      "Failed to run analysis",
+                  );
                 } finally {
                   setRunning(false);
                 }
@@ -168,19 +203,24 @@ const GuidancePage = ({ user, onLogout }) => {
               className="btn btn-primary"
               disabled={running}
             >
-              {running ? 'Running...' : 'Run Early Warning Analysis'}
+              {running ? "Running..." : "Run Early Warning Analysis"}
             </button>
           </div>
 
           {students.length === 0 ? (
-            <p>No at-risk students identified yet. Run Early Warning Analysis to identify students.</p>
+            <p>
+              No at-risk students identified yet. Run Early Warning Analysis to
+              identify students.
+            </p>
           ) : (
             <div className="students-grid">
-              {students.map(student => (
+              {students.map((student) => (
                 <div key={student.id} className="student-card">
                   <div className="student-header">
                     <h3>{student.name}</h3>
-                    <span className={`badge ${getRiskBadgeClass(student.risk_level)}`}>
+                    <span
+                      className={`badge ${getRiskBadgeClass(student.risk_level)}`}
+                    >
                       {student.risk_level}
                     </span>
                   </div>
@@ -188,18 +228,41 @@ const GuidancePage = ({ user, onLogout }) => {
                   <div className="confidence">
                     <div className="confidence-row">
                       <span className="confidence-label">Confidence</span>
-                      <span className="confidence-value">{formatPercent(student.confidence_score)}</span>
+                      <span className="confidence-value">
+                        {formatPercent(student.confidence_score)}
+                      </span>
                     </div>
                     <div className="confidence-bar">
-                      <div className="confidence-fill" style={{ width: `${Math.max(0, Math.min(100, (Number(student.confidence_score) || 0) * 100))}%` }} />
+                      <div
+                        className="confidence-fill"
+                        style={{
+                          width: `${Math.max(0, Math.min(100, (Number(student.confidence_score) || 0) * 100))}%`,
+                        }}
+                      />
                     </div>
                   </div>
 
                   <div className="student-info-grid">
-                    <div><span className="k">Student ID</span><span className="v">{student.student_id}</span></div>
-                    <div><span className="k">Class</span><span className="v">{student.class_name} • Grade {student.grade}</span></div>
-                    <div><span className="k">Risk Type</span><span className="v">{toTitle(student.risk_type)}</span></div>
-                    <div><span className="k">Identified By</span><span className="v">{toTitle(student.identified_by)}</span></div>
+                    <div>
+                      <span className="k">Student ID</span>
+                      <span className="v">{student.student_id}</span>
+                    </div>
+                    <div>
+                      <span className="k">Class</span>
+                      <span className="v">
+                        {student.class_name} • Grade {student.grade}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="k">Risk Type</span>
+                      <span className="v">{toTitle(student.risk_type)}</span>
+                    </div>
+                    <div>
+                      <span className="k">Identified By</span>
+                      <span className="v">
+                        {toTitle(student.identified_by)}
+                      </span>
+                    </div>
                   </div>
 
                   <button
@@ -211,7 +274,9 @@ const GuidancePage = ({ user, onLogout }) => {
                       setExpanded(next);
                     }}
                   >
-                    {expanded.has(student.id) ? 'Hide risk details' : 'Show risk details'}
+                    {expanded.has(student.id)
+                      ? "Hide risk details"
+                      : "Show risk details"}
                   </button>
 
                   {expanded.has(student.id) && (
@@ -221,13 +286,13 @@ const GuidancePage = ({ user, onLogout }) => {
                   )}
 
                   <div className="student-actions">
-                    <button 
+                    <button
                       onClick={() => openGeneratePath(student)}
                       className="btn btn-primary"
                     >
                       Generate Learning Path
                     </button>
-                    <Link 
+                    <Link
                       to={`/teacher/students/${student.id}`}
                       className="btn btn-secondary"
                     >
@@ -242,14 +307,38 @@ const GuidancePage = ({ user, onLogout }) => {
       </div>
 
       {pathModal.open && (
-        <div className="modal-backdrop" onClick={() => setPathModal({ open: false, student: null, weak_subject: '', weak_section: '' })}>
+        <div
+          className="modal-backdrop"
+          onClick={() =>
+            setPathModal({
+              open: false,
+              student: null,
+              weak_subject: "",
+              weak_section: "",
+            })
+          }
+        >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
                 <h3 style={{ margin: 0 }}>Generate Learning Path</h3>
-                <p className="subtitle" style={{ margin: '4px 0 0' }}>{pathModal.student?.name}</p>
+                <p className="subtitle" style={{ margin: "4px 0 0" }}>
+                  {pathModal.student?.name}
+                </p>
               </div>
-              <button className="icon-button" onClick={() => setPathModal({ open: false, student: null, weak_subject: '', weak_section: '' })}>✕</button>
+              <button
+                className="icon-button"
+                onClick={() =>
+                  setPathModal({
+                    open: false,
+                    student: null,
+                    weak_subject: "",
+                    weak_section: "",
+                  })
+                }
+              >
+                ✕
+              </button>
             </div>
 
             <div className="modal-body">
@@ -258,7 +347,9 @@ const GuidancePage = ({ user, onLogout }) => {
                 <input
                   className="input"
                   value={pathModal.weak_subject}
-                  onChange={(e) => setPathModal({ ...pathModal, weak_subject: e.target.value })}
+                  onChange={(e) =>
+                    setPathModal({ ...pathModal, weak_subject: e.target.value })
+                  }
                   placeholder="e.g., Mathematics"
                 />
               </label>
@@ -267,20 +358,35 @@ const GuidancePage = ({ user, onLogout }) => {
                 <input
                   className="input"
                   value={pathModal.weak_section}
-                  onChange={(e) => setPathModal({ ...pathModal, weak_section: e.target.value })}
+                  onChange={(e) =>
+                    setPathModal({ ...pathModal, weak_section: e.target.value })
+                  }
                   placeholder="e.g., Fractions"
                 />
               </label>
             </div>
 
             <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setPathModal({ open: false, student: null, weak_subject: '', weak_section: '' })}>
+              <button
+                className="btn btn-secondary"
+                onClick={() =>
+                  setPathModal({
+                    open: false,
+                    student: null,
+                    weak_subject: "",
+                    weak_section: "",
+                  })
+                }
+              >
                 Cancel
               </button>
               <button
                 className="btn btn-primary"
                 onClick={submitGeneratePath}
-                disabled={!pathModal.weak_subject.trim() || !pathModal.weak_section.trim()}
+                disabled={
+                  !pathModal.weak_subject.trim() ||
+                  !pathModal.weak_section.trim()
+                }
               >
                 Generate
               </button>
@@ -293,4 +399,3 @@ const GuidancePage = ({ user, onLogout }) => {
 };
 
 export default GuidancePage;
-
