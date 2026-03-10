@@ -76,28 +76,6 @@
   color: #333;
 }
 
-.trend {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.trend-improving {
-  background-color: #4caf50;
-  color: white;
-}
-
-.trend-stable {
-  background-color: #757575;
-  color: white;
-}
-
-.trend-declining {
-  background-color: #f44336;
-  color: white;
-}
-
 /* Modal Styles */
 .modal-backdrop {
   position: fixed;
@@ -165,4 +143,3 @@
 .icon-button:hover {
   background: #f3f4f6;
 }
-
