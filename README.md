@@ -10,7 +10,7 @@ ShilpaSuraksha is a data-driven academic risk prediction and student support pla
 
 - Early identification of academically at-risk students  
 - Holistic analysis beyond marks (behaviour + emotional well-being)  
-- Data-informed interventions for teachers and administrators  
+- Data-informed interventions via AI-generated teaching strategies 
 - Fair, explainable, and scalable student analytics  
 
 ---
@@ -117,26 +117,31 @@ Use Cases:
 
 ### 7. Personalized Learning Roadmap Generation
 
-Automatically generates improvement roadmaps for each student:
+A state-of-the-art "AI Co-Teacher" module that converts risk data into actionable education. Automatically generates improvement roadmaps for each student.
 
-- Weak subject focus areas  
-- Attendance improvement goals  
-- Behavioural and emotional support suggestions  
+- **Root-Cause Diagnosis:** Uses Knowledge Graphs to find prerequisite gaps (e.g., failing 'Decimals' due to 'Place Value' weakness).
+- **Localized Lesson Planning:** Generates 5-step teaching activities grounded in the Sri Lankan syllabus.
+- **Automated Micro-Assessments:** Creates 6-question MCQ quizzes tailored to the student's current learning path.
+- **Bilingual Adaptation:** Automatically detects and generates content in Sinhala or English based on the subject.
 
-Roadmaps include:
+---
 
-- Short-term goals
-- Medium-term milestones
-- Teacher-recommended actions  
+### 6. Probabilistic Progress Tracking
+- **Bayesian Analytics:** Moves beyond simple averages to predict a student's future scores using mathematical momentum and variance.
+- **Trend Visualization:** Provides teachers with a confidence-weighted forecast of student improvement.
 
 ---
 
 ## 🏗️ System Architecture (High Level)
 
-- **Frontend**: Dashboard for teachers & administrators  
-- **Backend**: RESTful APIs for data processing  
-- **ML Layer**: Risk prediction & clustering models  
-- **Database**: Student, academic, behavioural, and emotional data  
+- **Frontend**: React-based dashboard for teachers & administrators. 
+- **Backend**: Node.js & Express RESTful APIs.  
+- **ML Layer**: 
+  - Supervised/Unsupervised models for Risk & Clustering.
+  - **Custom NLP Model:** TF-IDF & Cosine Similarity for resource retrieval.
+  - **Knowledge Graph:** Directed Acyclic Graph (DAG) for prerequisite mapping.
+  - **LLM Integration:** Google Gemini (RAG architecture) for content synthesis.
+- **Database**: PostgreSQL (Student records, behavior data, and localized educational resources).
 
 ---
 
@@ -145,7 +150,11 @@ Roadmaps include:
 - Supervised models for risk prediction  
 - Unsupervised models for clustering  
 - Feature engineering from raw school data  
-- Model evaluation using accuracy, precision, recall, and F1-score  
+- Model evaluation using accuracy, precision, recall, and F1-score
+- Natural Language Processing (NLP): Custom-trained TF-IDF vectorizer for localized content matching.
+- Retrieval-Augmented Generation (RAG): Grounding Large Language Models in local syllabus data to prevent hallucinations.
+- Bayesian Networks: Used for probabilistic time-series forecasting of student performance.
+- Graph Theory: Knowledge Mapping for prerequisite discovery. 
 
 ---
 
@@ -162,14 +171,17 @@ Roadmaps include:
 
 - Aligned with Sri Lankan primary education context  
 - Supports local grading systems  
-- Designed for real-world school data constraints  
+- Designed for real-world school data constraints
+- Cultural Grounding: AI generates lesson examples using local contexts (e.g., village markets, local geography).
+- Syllabus Alignment: RAG ensures all AI suggestions follow the National Institute of Education (NIE) guidelines.
+- Bilingual Interface: Supports both Sinhala and English pedagogical requirements.
 
 ---
 
 ## 🔐 Data Privacy & Ethics
 
 - Student data confidentiality maintained  
-- Role-based access control  
+- Role-based access control (RBAC)  
 - No medical diagnosis or stigmatization  
 - Decision-support system, not a replacement for teachers  
 
