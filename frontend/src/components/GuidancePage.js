@@ -16,6 +16,7 @@ const GuidancePage = ({ user, onLogout }) => {
     weak_subject: '', 
     weak_section: '',
     grade_level: '',
+    all_subjects_text: '', // <-- NEW: Stores the sentence of all subjects
     isGenerating: false 
   });
 
@@ -42,12 +43,6 @@ const GuidancePage = ({ user, onLogout }) => {
       try { return JSON.parse(riskFactors); } catch { return { raw: riskFactors }; }
     }
     return riskFactors;
-  };
-
-  const formatPercent = (v) => {
-    const n = Number(v);
-    if (!Number.isFinite(n)) return '-';
-    return `${(n * 100).toFixed(1)}%`;
   };
 
   const toTitle = (s) => (s || '').toString().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -85,8 +80,62 @@ const GuidancePage = ({ user, onLogout }) => {
     );
   };
 
-  const openGeneratePath = (student) => {
-    setPathModal({ open: true, student, weak_subject: '', weak_section: '', grade_level: student.grade || '', isGenerating: false });
+  const openGeneratePath = async (student) => {
+    setPathModal({ 
+      open: true, 
+      student, 
+      weak_subject: 'Searching lowest score...', 
+      weak_section: '', 
+      grade_level: student.grade || '', 
+      all_subjects_text: 'Fetching student subjects...', // <-- NEW: Loading text
+      isGenerating: false 
+    });
+
+    try {
+      const res = await api.get(`/academic/student/${student.id}`);
+      const records = res.data || [];
+      
+      let weakestSubject = '';
+      let lowestPercentage = 101; 
+      const subjectNames = new Set(); // <-- NEW: Collect unique subjects
+
+      records.forEach(record => {
+        if (record.subject) subjectNames.add(record.subject); // Add to our set
+
+        const max = parseFloat(record.max_score) || 100;
+        const score = parseFloat(record.score) || 0;
+        if (max > 0) {
+          const percentage = (score / max) * 100;
+          if (percentage < lowestPercentage) {
+            lowestPercentage = percentage;
+            weakestSubject = record.subject;
+          }
+        }
+      });
+
+      // <-- NEW: Format the sentence to display all subjects
+      const allSubjectsArray = Array.from(subjectNames);
+      let subjectsSentence = '';
+      if (allSubjectsArray.length > 0) {
+        subjectsSentence = `Evaluated Subjects: ${allSubjectsArray.join(', ')}. Lowest detected: ${weakestSubject}.`;
+      } else {
+        subjectsSentence = 'No prior subject records found.';
+      }
+
+      setPathModal(prev => ({ 
+        ...prev, 
+        weak_subject: weakestSubject,
+        all_subjects_text: subjectsSentence // <-- Update state with the sentence
+      }));
+
+    } catch (error) {
+      console.error("Error fetching weakest subject from academic records:", error);
+      setPathModal(prev => ({ 
+          ...prev, 
+          weak_subject: '', 
+          all_subjects_text: 'Failed to load subjects.' 
+      }));
+    }
   };
 
   const submitGeneratePath = async () => {
@@ -102,7 +151,7 @@ const GuidancePage = ({ user, onLogout }) => {
       await api.post(`/learning-paths/personalized/${student.id}`, {
         weak_subject: cleanSubject,
         weak_section: cleanSection,
-        grade_level: grade_level // Forces ML to strictly find this grade
+        grade_level: grade_level
       });
       alert(`Intelligent Learning Path generated successfully for Grade ${grade_level}!`);
       setPathModal(prev => ({ ...prev, open: false }));
@@ -215,8 +264,16 @@ const GuidancePage = ({ user, onLogout }) => {
                 />
               </label>
               
+              {/* --- NEW UI UPDATE --- */}
               <label className="field">
-                <span>Weak Subject (e.g. Mathematics)</span>
+                <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '8px' }}>
+                  <span style={{ fontWeight: 'bold' }}>Weak Subject (Auto-Detected)</span>
+                  {pathModal.all_subjects_text && (
+                    <span style={{ fontSize: '0.85rem', color: '#059669', marginTop: '4px' }}>
+                      {pathModal.all_subjects_text}
+                    </span>
+                  )}
+                </div>
                 <input
                   className="input"
                   value={pathModal.weak_subject}
@@ -225,6 +282,8 @@ const GuidancePage = ({ user, onLogout }) => {
                   disabled={pathModal.isGenerating}
                 />
               </label>
+              {/* --------------------- */}
+
               <label className="field">
                 <span>Specific Topic / Section (e.g. Fractions)</span>
                 <input
@@ -238,7 +297,7 @@ const GuidancePage = ({ user, onLogout }) => {
             </div>
             <div className="modal-actions">
               <button className="btn btn-secondary" onClick={() => setPathModal({ ...pathModal, open: false })} disabled={pathModal.isGenerating}>Cancel</button>
-              <button className="btn btn-primary" onClick={submitGeneratePath} disabled={!pathModal.weak_subject.trim() || !pathModal.weak_section.trim() || !pathModal.grade_level || pathModal.isGenerating}>
+              <button className="btn btn-primary" onClick={submitGeneratePath} disabled={!pathModal.weak_subject.trim() || !pathModal.weak_section.trim() || !pathModal.grade_level || pathModal.isGenerating || pathModal.weak_subject === 'Searching lowest score...'}>
                 {pathModal.isGenerating ? 'Processing ML Model...' : 'Generate Path'}
               </button>
             </div>
