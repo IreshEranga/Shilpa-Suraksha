@@ -84,7 +84,8 @@ app.use('/api/components', require('./routes/components'));
 app.use('/api/behavioral', require('./routes/behavioral'));
 app.use('/api/ml', require('./routes/ml'));
 app.use('/api/thresholds', require('./routes/thresholdsRoutes'));
-
+app.use('/api/training', require('./routes/trainingRoutes'));
+app.use('/api/dataset', require('./routes/datasetRoutes'));
 
 // ================= HEALTH CHECK (LIVENESS) =================
 app.get('/api/health', async (req, res) => {
