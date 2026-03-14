@@ -647,6 +647,221 @@ router.get('/intervention-suggestions', async (req, res) => {
   }
 });
 
+const normalizeInterventionType = (type) => {
+  if (!type) return "individual";
+  if (type === "group" || type === "individual") return type;
+  if (type === "hybrid") return "group";
+  return "individual";
+};
+
+const buildActivityDescription = (suggestion) => {
+  const parts = [];
+  if (suggestion.title) parts.push(`Title: ${suggestion.title}`);
+  if (suggestion.description)
+    parts.push(`Description: ${suggestion.description}`);
+  if (
+    Array.isArray(suggestion.activities) &&
+    suggestion.activities.length > 0
+  ) {
+    parts.push(`Activities: ${suggestion.activities.join(" | ")}`);
+  }
+  return parts.join("\n");
+};
+
+// Create intervention task(s) from suggestion
+router.post("/intervention-tasks", async (req, res) => {
+  try {
+    const { cluster_id, student_id, suggestion, start_date } = req.body;
+    const teacherId = req.userRole === "teacher" ? req.userId : null;
+    const schoolId = req.schoolId;
+
+    if (!suggestion || !suggestion.title) {
+      return res
+        .status(400)
+        .json({ error: "suggestion with at least a title is required" });
+    }
+
+    if (!cluster_id && !student_id) {
+      return res
+        .status(400)
+        .json({ error: "cluster_id or student_id is required" });
+    }
+
+    const studentsToAssign = [];
+
+    if (cluster_id) {
+      let clusterStudentsQuery = `
+        SELECT s.id
+        FROM student_cluster_assignments sca
+        JOIN students s ON s.id = sca.student_id
+        JOIN classes c ON c.id = s.class_id
+        WHERE sca.cluster_id = $1
+      `;
+      const clusterParams = [cluster_id];
+      let paramCount = 1;
+
+      if (teacherId) {
+        paramCount++;
+        clusterStudentsQuery += ` AND c.teacher_id = $${paramCount}`;
+        clusterParams.push(teacherId);
+      } else if (schoolId) {
+        paramCount++;
+        clusterStudentsQuery += ` AND EXISTS (
+          SELECT 1 FROM teachers t WHERE t.id = c.teacher_id AND t.school_id = $${paramCount}
+        )`;
+        clusterParams.push(schoolId);
+      }
+
+      const clusterStudents = await db.query(
+        clusterStudentsQuery,
+        clusterParams,
+      );
+      studentsToAssign.push(...clusterStudents.rows.map((r) => r.id));
+    }
+
+    if (student_id) {
+      let studentQuery = `
+        SELECT s.id
+        FROM students s
+        JOIN classes c ON c.id = s.class_id
+        WHERE s.id = $1
+      `;
+      const studentParams = [student_id];
+      let paramCount = 1;
+
+      if (teacherId) {
+        paramCount++;
+        studentQuery += ` AND c.teacher_id = $${paramCount}`;
+        studentParams.push(teacherId);
+      } else if (schoolId) {
+        paramCount++;
+        studentQuery += ` AND EXISTS (
+          SELECT 1 FROM teachers t WHERE t.id = c.teacher_id AND t.school_id = $${paramCount}
+        )`;
+        studentParams.push(schoolId);
+      }
+
+      const studentResult = await db.query(studentQuery, studentParams);
+      if (studentResult.rows.length === 0) {
+        return res
+          .status(403)
+          .json({ error: "Student not found or not accessible" });
+      }
+      studentsToAssign.push(studentResult.rows[0].id);
+    }
+
+    const uniqueStudentIds = [...new Set(studentsToAssign)];
+    if (uniqueStudentIds.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "No eligible students found for this task" });
+    }
+
+    const interventionType = normalizeInterventionType(suggestion.type);
+    const activityDescription = buildActivityDescription(suggestion);
+    const createdTasks = [];
+
+    for (const targetStudentId of uniqueStudentIds) {
+      const inserted = await db.query(
+        `INSERT INTO intervention_history (
+          student_id,
+          cluster_id,
+          intervention_type,
+          activity_description,
+          source_suggestion,
+          assigned_by,
+          start_date,
+          status
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, CURRENT_DATE), 'active')
+        RETURNING *`,
+        [
+          targetStudentId,
+          cluster_id || null,
+          interventionType,
+          activityDescription,
+          JSON.stringify(suggestion),
+          req.userId || null,
+          start_date || null,
+        ],
+      );
+
+      createdTasks.push(inserted.rows[0]);
+    }
+
+    res.status(201).json({
+      message: "Intervention task(s) created successfully",
+      created_count: createdTasks.length,
+      tasks: createdTasks,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update intervention task status/progress
+router.patch("/intervention-tasks/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, effectiveness_score, end_date } = req.body;
+    const teacherId = req.userRole === "teacher" ? req.userId : null;
+    const schoolId = req.schoolId;
+
+    const allowedStatuses = ["active", "completed", "paused", "cancelled"];
+    if (status && !allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: "Invalid status value" });
+    }
+
+    let accessQuery = `
+      SELECT ih.id
+      FROM intervention_history ih
+      JOIN students s ON s.id = ih.student_id
+      JOIN classes c ON c.id = s.class_id
+      WHERE ih.id = $1
+    `;
+    const accessParams = [id];
+    let paramCount = 1;
+
+    if (teacherId) {
+      paramCount++;
+      accessQuery += ` AND c.teacher_id = $${paramCount}`;
+      accessParams.push(teacherId);
+    } else if (schoolId) {
+      paramCount++;
+      accessQuery += ` AND EXISTS (
+        SELECT 1 FROM teachers t WHERE t.id = c.teacher_id AND t.school_id = $${paramCount}
+      )`;
+      accessParams.push(schoolId);
+    }
+
+    const accessible = await db.query(accessQuery, accessParams);
+    if (accessible.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "Task not found or not accessible" });
+    }
+
+    const updateResult = await db.query(
+      `UPDATE intervention_history
+       SET
+         status = COALESCE($1::text, status),
+         effectiveness_score = COALESCE($2::numeric, effectiveness_score),
+         end_date = CASE
+           WHEN $3::date IS NOT NULL THEN $3::date
+           WHEN $1 = 'completed' AND end_date IS NULL THEN CURRENT_DATE
+           ELSE end_date
+         END
+       WHERE id = $4
+       RETURNING *`,
+      [status || null, effectiveness_score || null, end_date || null, id],
+    );
+
+    res.json(updateResult.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Track progress
 router.post('/track-progress', async (req, res) => {
   try {
