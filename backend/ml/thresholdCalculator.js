@@ -198,8 +198,6 @@ const db = require('../config/database');
  * Calculate dynamic thresholds from historical data
  * Uses percentiles and statistical measures from existing student data
  * 
- * IMPORTANT: When called from early warning system, thresholds are 
- * recalculated fresh each time to ensure latest data is used
  */
 
 let cachedThresholds = null;
