@@ -2,9 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const db = require('./config/database');
+const { initializeTensorFlow, getBackendInfo } = require('./ml/tfInitializer');
 
 // Load environment variables
 dotenv.config();
+
+// Initialize TensorFlow.js early for optimal performance
+console.log('Starting server initialization...');
+const { backendInfo } = initializeTensorFlow({ verbose: true });
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -36,6 +41,15 @@ app.get('/api/health', (req, res) => {
 // Initialize database and start server
 db.init()
   .then(() => {
+    // Show TensorFlow backend status on startup
+    const backendStatus = backendInfo.useNodeBindings 
+      ? '✓ Native bindings (FAST)' 
+      : '⚠ JavaScript fallback (SLOW)';
+    console.log(`\nTensorFlow Backend: ${backendStatus}`);
+    if (!backendInfo.useNodeBindings) {
+      console.log('Tip: Run "npm run test-tensorflow" for setup instructions\n');
+    }
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
