@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import api from '../utils/api';
 import TeacherNavbar from './shared/TeacherNavbar';
 import './TeacherLanding.css';
 
 const TeacherLanding = ({ user, onLogout }) => {
-  const navigate = useNavigate();
   const [landingData, setLandingData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -97,17 +96,24 @@ const TeacherLanding = ({ user, onLogout }) => {
                 </tr>
               </thead>
               <tbody>
-                {landingData.students.slice(0, 10).map(student => (
-                  <tr key={student.id}>
-                    <td>{student.student_id}</td>
-                    <td>{student.name}</td>
-                    <td>
-                      <Link to={`/teacher/students/${student.id}`} className="btn btn-small">
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                {[...landingData.students]
+                  .sort((a, b) => {
+                    const idA = String(a.student_id || '');
+                    const idB = String(b.student_id || '');
+                    return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+                  })
+                  .slice(0, 10)
+                  .map(student => (
+                    <tr key={student.id}>
+                      <td>{student.student_id}</td>
+                      <td>{student.name}</td>
+                      <td>
+                        <Link to={`/teacher/students/${student.id}`} className="btn btn-small">
+                          View
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           )}
@@ -118,4 +124,3 @@ const TeacherLanding = ({ user, onLogout }) => {
 };
 
 export default TeacherLanding;
-

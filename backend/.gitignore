@@ -1,1 +1,6 @@
+# Sensitive Environment Variables
+.env
+.env.local
+
+# Node modules (huge folders)
 node_modules/

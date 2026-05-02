@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import api from '../utils/api';
 import TeacherNavbar from './shared/TeacherNavbar';
 import './ImprovementDashboard.css';
@@ -9,7 +8,6 @@ const ImprovementDashboard = ({ user, onLogout }) => {
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState('clusters');
   const [hoveredPoint, setHoveredPoint] = useState(null);
-  const [selectedStudentId, setSelectedStudentId] = useState('');
   const [expandedInterventionId, setExpandedInterventionId] = useState(null);
   const [suggestionsModal, setSuggestionsModal] = useState({ open: false, suggestions: [], clusterName: '' });
 
@@ -129,50 +127,6 @@ const ImprovementDashboard = ({ user, onLogout }) => {
     );
   };
 
-  const getProgressSeries = () => {
-    const rows = dashboardData?.progress || [];
-    const filtered = selectedStudentId ? rows.filter(r => String(r.student_id) === String(selectedStudentId)) : rows;
-    return filtered
-      .map(r => ({
-        t: new Date(r.recorded_at).getTime(),
-        score: Number(r.assessment_score ?? r.assignment_result ?? 0) || 0
-      }))
-      .filter(x => x.score > 0 && Number.isFinite(x.t))
-      .sort((a, b) => a.t - b.t);
-  };
-
-  const renderLineChart = () => {
-    const data = getProgressSeries();
-    if (!data.length) return <p>No progress data yet.</p>;
-
-    const width = 640;
-    const height = 240;
-    const pad = 30;
-
-    const ts = data.map(d => d.t);
-    const vs = data.map(d => d.score);
-    const tmin = Math.min(...ts);
-    const tmax = Math.max(...ts);
-    const vmin = Math.min(...vs, 0);
-    const vmax = Math.max(...vs, 100);
-
-    const xScale = (t) => pad + ((t - tmin) / Math.max(1e-6, (tmax - tmin))) * (width - pad * 2);
-    const yScale = (v) => height - pad - ((v - vmin) / Math.max(1e-6, (vmax - vmin))) * (height - pad * 2);
-
-    const d = data.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${xScale(pt.t).toFixed(1)} ${yScale(pt.score).toFixed(1)}`).join(' ');
-
-    return (
-      <svg width={width} height={height} style={{ border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff' }}>
-        <line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="#9ca3af" />
-        <line x1={pad} y1={pad} x2={pad} y2={height - pad} stroke="#9ca3af" />
-        <path d={d} fill="none" stroke="#2563eb" strokeWidth="2" />
-        {data.map((pt, idx) => (
-          <circle key={idx} cx={xScale(pt.t)} cy={yScale(pt.score)} r={3} fill="#2563eb" />
-        ))}
-      </svg>
-    );
-  };
-
   if (loading) {
     return <div className="loading">Loading...</div>;
   }
@@ -201,12 +155,6 @@ const ImprovementDashboard = ({ user, onLogout }) => {
             onClick={() => setActiveView('interventions')}
           >
             Interventions
-          </button>
-          <button 
-            className={activeView === 'progress' ? 'view-tab active' : 'view-tab'}
-            onClick={() => setActiveView('progress')}
-          >
-            Progress Tracking
           </button>
         </div>
 
@@ -297,53 +245,6 @@ const ImprovementDashboard = ({ user, onLogout }) => {
                         </tr>
                       )}
                     </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {activeView === 'progress' && (
-          <div className="view-content">
-            <div className="card">
-              <h3>Progress Tracking</h3>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
-                <label style={{ fontWeight: 600 }}>Student trend:</label>
-                <select className="input" value={selectedStudentId} onChange={(e) => setSelectedStudentId(e.target.value)} style={{ maxWidth: 320 }}>
-                  <option value="">All students (average view)</option>
-                  {Array.from(new Map((dashboardData?.progress || []).map(p => [p.student_id, p.student_name])).entries()).map(([id, name]) => (
-                    <option key={id} value={id}>{name}</option>
-                  ))}
-                </select>
-              </div>
-              {renderLineChart()}
-              <div style={{ height: 12 }} />
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Student</th>
-                    <th>Subject</th>
-                    <th>Section</th>
-                    <th>Assessment Score</th>
-                    <th>Trend</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dashboardData?.progress?.map(progress => (
-                    <tr key={progress.id}>
-                      <td>{progress.student_name}</td>
-                      <td>{progress.subject || '-'}</td>
-                      <td>{progress.section || '-'}</td>
-                      <td>{progress.assessment_score || '-'}</td>
-                      <td>
-                        <span className={`trend trend-${progress.improvement_trend}`}>
-                          {progress.improvement_trend}
-                        </span>
-                      </td>
-                      <td>{new Date(progress.recorded_at).toLocaleDateString()}</td>
-                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -508,4 +409,3 @@ const ImprovementDashboard = ({ user, onLogout }) => {
 };
 
 export default ImprovementDashboard;
-

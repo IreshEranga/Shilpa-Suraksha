@@ -1,676 +1,193 @@
+require('dotenv').config();
 const db = require('../config/database');
 const { generateLearningPath } = require('./learningPathModel');
-const { generateRecommendations } = require('./recommendationSystem');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { getPrerequisiteConcepts } = require('./knowledgeGraph');
 
-/**
- * Generate personalized learning path for a flagged student
- * @param {Object} data - Student data and requirements
- * @returns {Object} Complete learning path with recommendations
- */
+// Initialize Gemini API
+const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
+
+const getEThaksalawaLink = (grade, subject) => {
+  const g = parseInt(grade);
+  const sub = (subject || '').toLowerCase();
+  if (g === 1) {
+    if (sub.includes('sinhala') || sub.includes('මව්බස')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=340';
+    if (sub.includes('math') || sub.includes('ගණිතය')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=282';
+    if (sub.includes('env') || sub.includes('පරිසරය') || sub.includes('sci')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=295';
+    if (sub.includes('buddhism') || sub.includes('බුද්ධ')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=343';
+    return 'https://e-thaksalawa.moe.gov.lk/lcms/course/index.php?categoryid=25';
+  }
+  if (g === 2) {
+    if (sub.includes('sinhala') || sub.includes('මව්බස')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=287';
+    if (sub.includes('math') || sub.includes('ගණිතය')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=280';
+    if (sub.includes('env') || sub.includes('පරිසරය') || sub.includes('sci')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=285';
+    if (sub.includes('buddhism') || sub.includes('බුද්ධ')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=300';
+    return 'https://e-thaksalawa.moe.gov.lk/lcms/course/index.php?categoryid=26';
+  }
+  if (g === 3) {
+    if (sub.includes('sinhala') || sub.includes('මව්බස')) return 'http://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=291';
+    if (sub.includes('math') || sub.includes('ගණිතය')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=279';
+    if (sub.includes('env') || sub.includes('පරිසරය') || sub.includes('sci')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=283';
+    if (sub.includes('eng') || sub.includes('ඉංග්‍රීසි')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=298';
+    return 'https://e-thaksalawa.moe.gov.lk/lcms/course/index.php?categoryid=27';
+  }
+  if (g === 4) {
+    if (sub.includes('sinhala') || sub.includes('මව්බස')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=284';
+    if (sub.includes('math') || sub.includes('ගණිතය')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=277';
+    if (sub.includes('env') || sub.includes('පරිසරය') || sub.includes('sci')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=281';
+    if (sub.includes('eng') || sub.includes('ඉංග්‍රීසි')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=286';
+    return 'https://e-thaksalawa.moe.gov.lk/lcms/course/index.php?categoryid=28';
+  }
+  if (g === 5) {
+    if (sub.includes('sinhala') || sub.includes('මව්බස')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=332';
+    if (sub.includes('math') || sub.includes('ගණිතය')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=318';
+    if (sub.includes('env') || sub.includes('පරිසරය') || sub.includes('sci')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=330';
+    if (sub.includes('eng') || sub.includes('ඉංග්‍රීසි')) return 'https://e-thaksalawa.moe.gov.lk/lcms/course/view.php?id=333';
+    return 'https://e-thaksalawa.moe.gov.lk/lcms/course/index.php?categoryid=43';
+  }
+  return 'https://e-thaksalawa.moe.gov.lk/';
+};
+
 const generatePersonalizedLearningPath = async (data) => {
   try {
-    const { 
-      student_id, 
-      weak_subject, 
-      weak_section, 
-      risk_level,
-      risk_type,
-      academic_history = []
-    } = data;
+    const { student_id, weak_subject, weak_section, risk_level, grade_level } = data;
 
-    if (!student_id || !weak_subject || !weak_section) {
-      throw new Error('student_id, weak_subject, and weak_section are required');
+    if (!student_id || !weak_subject || !weak_section) throw new Error('student_id, weak_subject, and weak_section are required');
+
+    if (!genAI) {
+      console.warn("⚠️ GEMINI_API_KEY IS MISSING! System is forced to use the Fallback Rules.");
     }
 
-    // Get student's academic history if not provided
-    let academicHistory = academic_history;
-    if (academicHistory.length === 0) {
-      const academicData = await db.query(
-        // academic_records does not have a "date" column. Use exam_date if available, else created_at.
-        'SELECT * FROM academic_records WHERE student_id = $1 AND subject = $2 ORDER BY COALESCE(exam_date, created_at) DESC',
-        [student_id, weak_subject]
-      );
-      academicHistory = academicData.rows;
+    // 1. GNN Knowledge Mapping
+    const prerequisites = getPrerequisiteConcepts(weak_section);
+    let graphInsight = "";
+    if (prerequisites) {
+      graphInsight = `Knowledge Graph detected that difficulties in ${weak_section} are often caused by gaps in foundational concepts like: ${prerequisites.join(', ')}. Include these in the path.`;
     }
 
-    // Get student's behavioral records
-    const behavioralData = await db.query(
-      'SELECT * FROM behavioral_records WHERE student_id = $1 ORDER BY observation_date DESC LIMIT 10',
-      [student_id]
-    );
-
-    // Get existing progress tracking
-    const progressData = await db.query(
-      `SELECT * FROM progress_tracking 
-       WHERE student_id = $1 
-       ORDER BY recorded_at DESC 
-       LIMIT 20`,
-      [student_id]
-    );
-
-    // Analyze student's learning profile
-    const learningProfile = analyzeLearningProfile({
-      academicHistory,
-      behavioralRecords: behavioralData.rows,
-      progressHistory: progressData.rows,
-      risk_level,
-      risk_type
+    // 2. NLP TF-IDF Database Retrieval
+    const dbResources = await generateLearningPath({
+      subject: weak_subject, section: weak_section, studentId: student_id, gradeLevel: grade_level
     });
 
-    // Generate base recommendations
-    const recommendations = await generateRecommendations({
-      student_id,
-      weak_subject,
-      weak_section,
-      academicHistory
-    });
+    const encodedSubject = encodeURIComponent(weak_subject);
+    const encodedSection = encodeURIComponent(weak_section);
+    const onlineResources = [
+      { title: `Grade ${grade_level} ${weak_subject} on e-Thaksalawa`, url: getEThaksalawaLink(grade_level, weak_subject), platform: 'e-Thaksalawa' },
+      { title: `Watch ${weak_section} Lessons`, url: `https://www.youtube.com/results?search_query=Grade+${grade_level}+${encodedSubject}+${encodedSection}+Sinhala`, platform: 'YouTube' }
+    ];
 
-    // Enhance recommendations based on learning profile
-    const enhancedRecommendations = enhanceRecommendations(
-      recommendations,
-      learningProfile,
-      risk_level
-    );
+    // 3. Enhanced Multimodal Generative AI
+    if (genAI) {
+      
+      // Dynamic Language Logic
+      const isEnglishSubject = weak_subject.toLowerCase().includes('english');
+      const contentLanguage = isEnglishSubject ? 'English' : 'Sinhala';
 
-    // Generate personalized activities
-    const personalizedActivities = generatePersonalizedActivities(
-      weak_subject,
-      weak_section,
-      learningProfile
-    );
+      const prompt = `
+        You are a highly advanced AI Educational Expert for Sri Lankan primary schools.
+        Your target audience is the TEACHER, NOT the student. You are advising the teacher on how to help the student.
+        
+        Student Profile: Grade ${grade_level}, weak in ${weak_subject} (${weak_section}). Risk level: ${risk_level}.
+        
+        SYSTEM DIRECTIVES:
+        1. Knowledge Graph Analysis: ${graphInsight}
+        2. Available Database Materials: ${JSON.stringify(dbResources.resources)}
 
-    // Generate remedial exercises with adaptive difficulty
-    const adaptiveExercises = generateAdaptiveExercises(
-      weak_subject,
-      weak_section,
-      learningProfile,
-      progressData.rows
-    );
+        CRITICAL RULES: 
+        - NEVER mention database IDs (like ID 16, ID 86), source materials, or technical references in the text. Speak naturally to the teacher.
+        - The Subject is ${weak_subject}. Therefore, the Micro-Quiz questions, options, answers, and the Activity Titles MUST be written in ${contentLanguage}.
+        - The instructions addressing the teacher (ai_intro, prerequisites_note, and activity descriptions) MUST be in Sinhala.
 
-    // Generate support strategies based on risk level
-    const supportStrategies = generateSupportStrategies(
-      learningProfile,
-      risk_level,
-      risk_type
-    );
+        TASK: Generate a STRICT JSON object. DO NOT wrap the JSON in Markdown backticks. DO NOT add any text outside the curly braces.
+        It must contain exactly 5 distinct activities using Sri Lankan cultural examples.
+        It must contain exactly 6 MCQ Questions for the micro_quiz in ${contentLanguage}.
 
-    // Create learning path structure
-    const learningPath = {
-      student_id,
-      subject: weak_subject,
-      section: weak_section,
-      content: enhancedRecommendations.content,
-      resources: enhancedRecommendations.resources,
-      activities: personalizedActivities,
-      exercises: adaptiveExercises,
-      strategies: supportStrategies,
-      learningProfile,
-      estimatedDuration: calculateEstimatedDuration(learningProfile, risk_level),
-      milestones: generateMilestones(weak_subject, weak_section, learningProfile)
-    };
+        Format strictly as:
+        {
+          "ai_intro": "Encouraging introductory paragraph in Sinhala ADDRESSED TO THE TEACHER (Start with: 'ආදරණීය ගුරුතුමනි/ගුරුතුමියනි, මෙම සිසුවාට...').",
+          "prerequisites_note": "A short note in Sinhala advising the TEACHER to review foundational concepts with the student first.",
+          "activities": [ 
+            { "title": "Activity Name (in ${contentLanguage})", "type": "Visual / Game / Written / Practical", "description": "Instructions FOR THE TEACHER in Sinhala on how to conduct this activity.", "estimatedTime": "15 mins" } 
+          ],
+          "micro_quiz": [
+            { "question": "Question in ${contentLanguage}?", "options": ["A", "B", "C", "D"], "answer": "Correct Option" }
+          ],
+          "strategies": [ { "title": "Strategy Name (in Sinhala)", "description": "Teaching strategy for the teacher in Sinhala" } ]
+        }
+      `;
 
-    return learningPath;
-  } catch (error) {
-    console.error('Error generating personalized learning path:', error);
-    throw error;
-  }
-};
+      let aiResponseText = null;
+      
+      const modelsToTry = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash-latest",
+        "gemini-1.5-flash",
+        "gemini-pro"
+      ];
 
-/**
- * Analyze student's learning profile
- */
-const analyzeLearningProfile = (data) => {
-  const { academicHistory, behavioralRecords, progressHistory, risk_level, risk_type } = data;
-
-  // Calculate academic performance metrics
-  const scores = academicHistory.map(r => parseFloat(r.score) || 0);
-  const averageScore = scores.length > 0 
-    ? scores.reduce((a, b) => a + b, 0) / scores.length 
-    : 0;
-
-  // Calculate trend
-  const recentScores = scores.slice(0, 3);
-  const olderScores = scores.slice(3, 6);
-  const recentAvg = recentScores.length > 0 
-    ? recentScores.reduce((a, b) => a + b, 0) / recentScores.length 
-    : 0;
-  const olderAvg = olderScores.length > 0 
-    ? olderScores.reduce((a, b) => a + b, 0) / olderScores.length 
-    : recentAvg;
-
-  let trend = 'stable';
-  if (recentAvg > olderAvg + 5) {
-    trend = 'improving';
-  } else if (recentAvg < olderAvg - 5) {
-    trend = 'declining';
-  }
-
-  // Analyze behavioral patterns
-  const negativeBehaviors = behavioralRecords.filter(b => b.behavior_type === 'negative');
-  const behavioralConcern = negativeBehaviors.length > 3 ? 'high' : 
-                           negativeBehaviors.length > 1 ? 'medium' : 'low';
-
-  // Analyze progress history
-  const completedTasks = progressHistory.filter(p => p.task_completed).length;
-  const totalTasks = progressHistory.length;
-  const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-
-  // Calculate improvement trend from progress
-  let progressTrend = 'stable';
-  if (progressHistory.length >= 2) {
-    const recentProgress = progressHistory.slice(0, 3);
-    const olderProgress = progressHistory.slice(3, 6);
-    
-    const recentAvgScore = recentProgress.length > 0
-      ? recentProgress.reduce((sum, p) => sum + (parseFloat(p.assessment_score) || 0), 0) / recentProgress.length
-      : 0;
-    const olderAvgScore = olderProgress.length > 0
-      ? olderProgress.reduce((sum, p) => sum + (parseFloat(p.assessment_score) || 0), 0) / olderProgress.length
-      : recentAvgScore;
-
-    if (recentAvgScore > olderAvgScore + 5) {
-      progressTrend = 'improving';
-    } else if (recentAvgScore < olderAvgScore - 5) {
-      progressTrend = 'declining';
-    }
-  }
-
-  // Determine learning style based on patterns
-  let learningStyle = 'balanced';
-  if (completionRate > 80 && averageScore > 60) {
-    learningStyle = 'independent';
-  } else if (completionRate < 50 || behavioralConcern === 'high') {
-    learningStyle = 'guided';
-  }
-
-  return {
-    averageScore,
-    trend,
-    progressTrend,
-    behavioralConcern,
-    completionRate,
-    learningStyle,
-    totalAttempts: scores.length,
-    weakAreas: averageScore < 50 ? [data.academicHistory[0]?.subject] : [],
-    strengths: averageScore > 70 ? [data.academicHistory[0]?.subject] : []
-  };
-};
-
-/**
- * Enhance recommendations based on learning profile
- */
-const enhanceRecommendations = (baseRecommendations, learningProfile, riskLevel) => {
-  let enhancedContent = baseRecommendations.content;
-
-  // Add personalized introduction
-  if (learningProfile.learningStyle === 'guided') {
-    enhancedContent = `\n[විශේෂ උපදෙස්: මෙම ඉගෙනුම් මාර්ගය ඔබගේ ප්‍රගතිය අධීක්ෂණය කරනු ලබන අතර, අවශ්‍ය විට ගුරුවරයාගේ උපකාර ලබා ගන්න.]\n\n${enhancedContent}`;
-  }
-
-  // Adjust based on risk level
-  if (riskLevel === 'high' || riskLevel === 'critical') {
-    enhancedContent += `\n\n⚠️ උසස් අවධානය අවශ්‍ය: මෙම සිසුවාට විශේෂ අවධානය සහ නිතර ප්‍රගතිය අධීක්ෂණය කිරීම අවශ්‍ය වේ.`;
-  }
-
-  return {
-    ...baseRecommendations,
-    content: enhancedContent
-  };
-};
-
-/**
- * Generate personalized activities
- */
-const generatePersonalizedActivities = (subject, section, learningProfile) => {
-  const activities = [];
-
-  // Foundational activities for low performers
-  if (learningProfile.averageScore < 40) {
-    activities.push({
-      id: `foundational-${Date.now()}`,
-      type: 'foundational',
-      title: 'මූලික සංකල්ප පුහුණුව',
-      description: 'මූලික සංකල්ප හැදෑරීමට පටන් ගන්න. සරල උදාහරණ සමඟ ආරම්භ කරන්න.',
-      duration: '2-3 weeks',
-      priority: 'high',
-      difficulty: 'easy',
-      estimatedTime: '30-45 minutes per session',
-      learningStyle: 'guided'
-    });
-  }
-
-  // Interactive activities
-  activities.push({
-    id: `interactive-${Date.now()}`,
-    type: 'interactive',
-    title: 'අන්තර්ක්‍රියාකාරී ක්‍රියාකාරකම්',
-    description: `${section} කොටස සඳහා ප්‍රායෝගික අත්දැකීම් සපයන ක්‍රියාකාරකම්.`,
-    duration: '1-2 weeks',
-    priority: 'medium',
-    difficulty: learningProfile.averageScore < 50 ? 'easy' : 'medium',
-    estimatedTime: '20-30 minutes per session',
-    learningStyle: learningProfile.learningStyle
-  });
-
-  // Remedial activities for declining trend
-  if (learningProfile.trend === 'declining' || learningProfile.progressTrend === 'declining') {
-    activities.push({
-      id: `remedial-${Date.now()}`,
-      type: 'remedial',
-      title: 'ප්‍රතිකාර වැඩසටහන',
-      description: 'පසුගිය කාලයේ පෙන්වූ පහළ ඵලදායිතාව හඳුනාගැනීම සහ වැඩිදියුණු කිරීම.',
-      duration: '3-4 weeks',
-      priority: 'high',
-      difficulty: 'easy',
-      estimatedTime: '45-60 minutes per session',
-      learningStyle: 'guided'
-    });
-  }
-
-  // Advanced activities for improving students
-  if (learningProfile.trend === 'improving' && learningProfile.averageScore > 60) {
-    activities.push({
-      id: `advanced-${Date.now()}`,
-      type: 'advanced',
-      title: 'උසස් ක්‍රියාකාරකම්',
-      description: 'ඔබගේ ප්‍රගතිය පදනම් කරගෙන උසස් ක්‍රියාකාරකම්.',
-      duration: '1-2 weeks',
-      priority: 'low',
-      difficulty: 'hard',
-      estimatedTime: '30-45 minutes per session',
-      learningStyle: 'independent'
-    });
-  }
-
-  return activities;
-};
-
-/**
- * Generate adaptive exercises based on performance
- */
-const generateAdaptiveExercises = (subject, section, learningProfile, progressHistory) => {
-  const exercises = [];
-
-  // Determine difficulty based on recent performance
-  let baseDifficulty = 'medium';
-  if (learningProfile.averageScore < 40) {
-    baseDifficulty = 'easy';
-  } else if (learningProfile.averageScore > 70) {
-    baseDifficulty = 'hard';
-  }
-
-  // Adjust based on recent progress
-  if (progressHistory.length > 0) {
-    const recentScores = progressHistory.slice(0, 3)
-      .map(p => parseFloat(p.assessment_score) || 0)
-      .filter(s => s > 0);
-    
-    if (recentScores.length > 0) {
-      const recentAvg = recentScores.reduce((a, b) => a + b, 0) / recentScores.length;
-      if (recentAvg < 50) {
-        baseDifficulty = 'easy';
-      } else if (recentAvg > 80) {
-        baseDifficulty = 'hard';
-      }
-    }
-  }
-
-  // Practice exercises
-  exercises.push({
-    id: `practice-${Date.now()}`,
-    type: 'practice',
-    title: 'පුනරීක්ෂණ ව්‍යායාම',
-    description: `${section} කොටස සඳහා පුනරීක්ෂණ ව්‍යායාම. ${baseDifficulty === 'easy' ? 'සරල' : baseDifficulty === 'hard' ? 'දුෂ්කර' : 'මධ්‍යම'} මට්ටමේ ප්‍රශ්න.`,
-    difficulty: baseDifficulty,
-    count: baseDifficulty === 'easy' ? 15 : baseDifficulty === 'hard' ? 5 : 10,
-    estimatedTime: baseDifficulty === 'easy' ? '20-30 minutes' : baseDifficulty === 'hard' ? '45-60 minutes' : '30-45 minutes'
-  });
-
-  // Assessment exercises
-  exercises.push({
-    id: `assessment-${Date.now()}`,
-    type: 'assessment',
-    title: 'ස්වයං තක්සේරුව',
-    description: 'ඔබගේ ප්‍රගතිය තක්සේරු කිරීම සඳහා කෙටි ප්‍රශ්න පත්‍රය.',
-    difficulty: baseDifficulty,
-    count: 5,
-    estimatedTime: '15-20 minutes'
-  });
-
-  // Remedial exercises for specific weak areas
-  if (learningProfile.weakAreas.length > 0) {
-    exercises.push({
-      id: `remedial-${Date.now()}`,
-      type: 'remedial',
-      title: 'විශේෂිත ප්‍රතිකාර ව්‍යායාම',
-      description: `${learningProfile.weakAreas.join(', ')} සඳහා විශේෂිත ව්‍යායාම.`,
-      difficulty: 'easy',
-      count: 10,
-      estimatedTime: '30-40 minutes',
-      focusAreas: learningProfile.weakAreas
-    });
-  }
-
-  return exercises;
-};
-
-/**
- * Generate support strategies
- */
-const generateSupportStrategies = (learningProfile, riskLevel, riskType) => {
-  const strategies = [];
-
-  // One-on-one support for low performers
-  if (learningProfile.averageScore < 50 || riskLevel === 'high' || riskLevel === 'critical') {
-    strategies.push({
-      id: `one-on-one-${Date.now()}`,
-      type: 'one_on_one',
-      title: 'පුද්ගලික උපකාර',
-      description: 'ගුරුවරයා සමඟ පුද්ගලික සැසි සැලසුම් කරන්න.',
-      frequency: riskLevel === 'critical' ? 'Daily' : 'Weekly',
-      priority: 'high',
-      duration: '30-45 minutes per session'
-    });
-  }
-
-  // Peer learning
-  strategies.push({
-    id: `peer-learning-${Date.now()}`,
-    type: 'peer_learning',
-    title: 'සමකාලීන ඉගෙනීම',
-    description: 'වඩා හොඳින් කටයුතු කරන සිසුන් සමඟ ඉගෙනීම.',
-    frequency: 'As needed',
-    priority: 'medium',
-    duration: 'Flexible'
-  });
-
-  // Parent involvement for behavioral or high risk
-  if (riskType === 'behavioral' || riskType === 'combined' || riskLevel === 'high' || riskLevel === 'critical') {
-    strategies.push({
-      id: `parent-involvement-${Date.now()}`,
-      type: 'parent_involvement',
-      title: 'පවුලේ සහභාගීත්වය',
-      description: 'පවුලේ සාමාජිකයන් සමඟ සන්නිවේදනය කරන්න.',
-      frequency: riskLevel === 'critical' ? 'Weekly' : 'Monthly',
-      priority: riskLevel === 'critical' ? 'high' : 'medium',
-      duration: 'Ongoing'
-    });
-  }
-
-  // Behavioral support if needed
-  if (learningProfile.behavioralConcern === 'high' || riskType === 'behavioral' || riskType === 'combined') {
-    strategies.push({
-      id: `behavioral-support-${Date.now()}`,
-      type: 'behavioral_support',
-      title: 'චර්යාත්මක සහාය',
-      description: 'චර්යාත්මක ගැටළු සමඟ කටයුතු කිරීම සඳහා විශේෂිත සහාය.',
-      frequency: 'Weekly',
-      priority: 'high',
-      duration: 'Ongoing'
-    });
-  }
-
-  return strategies;
-};
-
-/**
- * Calculate estimated duration for learning path
- */
-const calculateEstimatedDuration = (learningProfile, riskLevel) => {
-  let baseWeeks = 4;
-
-  // Adjust based on performance
-  if (learningProfile.averageScore < 40) {
-    baseWeeks = 6;
-  } else if (learningProfile.averageScore > 70) {
-    baseWeeks = 3;
-  }
-
-  // Adjust based on risk level
-  if (riskLevel === 'critical') {
-    baseWeeks += 2;
-  } else if (riskLevel === 'high') {
-    baseWeeks += 1;
-  }
-
-  // Adjust based on trend
-  if (learningProfile.trend === 'declining') {
-    baseWeeks += 1;
-  } else if (learningProfile.trend === 'improving') {
-    baseWeeks -= 1;
-  }
-
-  return `${Math.max(2, baseWeeks)}-${baseWeeks + 2} weeks`;
-};
-
-/**
- * Generate milestones for tracking progress
- */
-const generateMilestones = (subject, section, learningProfile) => {
-  const milestones = [];
-
-  milestones.push({
-    id: 'milestone-1',
-    title: 'මූලික සංකල්ප හැදෑරීම',
-    description: `${section} හි මූලික සංකල්ප හැදෑරීම සහ අවබෝධ කර ගැනීම.`,
-    targetScore: 50,
-    estimatedWeek: 1,
-    status: 'pending'
-  });
-
-  milestones.push({
-    id: 'milestone-2',
-    title: 'ප්‍රායෝගික යෙදීම',
-    description: 'සංකල්ප ප්‍රායෝගිකව යෙදීම සහ ව්‍යායාම කිරීම.',
-    targetScore: 65,
-    estimatedWeek: 2,
-    status: 'pending'
-  });
-
-  milestones.push({
-    id: 'milestone-3',
-    title: 'ස්වයං තක්සේරුව',
-    description: 'ස්වයං තක්සේරුව හරහා ප්‍රගතිය තක්සේරු කිරීම.',
-    targetScore: 75,
-    estimatedWeek: 3,
-    status: 'pending'
-  });
-
-  milestones.push({
-    id: 'milestone-4',
-    title: 'අවසන් තක්සේරුව',
-    description: 'ඉගෙනුම් මාර්ගයේ අවසන් තක්සේරුව.',
-    targetScore: 80,
-    estimatedWeek: 4,
-    status: 'pending'
-  });
-
-  return milestones;
-};
-
-/**
- * Calculate improvement trend dynamically
- */
-const calculateImprovementTrend = async (studentId, learningPathId = null) => {
-  try {
-    // Get recent progress records
-    let query = `
-      SELECT * FROM progress_tracking 
-      WHERE student_id = $1
-    `;
-    const params = [studentId];
-    
-    if (learningPathId) {
-      query += ' AND learning_path_id = $2';
-      params.push(learningPathId);
-    }
-    
-    query += ' ORDER BY recorded_at DESC LIMIT 10';
-    
-    const progressData = await db.query(query, params);
-
-    if (progressData.rows.length < 2) {
-      return 'stable';
-    }
-
-    // Calculate trend from assessment scores
-    const scores = progressData.rows
-      .map(p => parseFloat(p.assessment_score))
-      .filter(s => !isNaN(s) && s > 0);
-
-    if (scores.length < 2) {
-      // Use assignment results if available
-      const assignments = progressData.rows
-        .map(p => parseFloat(p.assignment_result))
-        .filter(s => !isNaN(s) && s > 0);
-
-      if (assignments.length < 2) {
-        return 'stable';
+      for (const modelName of modelsToTry) {
+        try {
+          console.log(`[AI Engine] Attempting to connect using model: ${modelName}...`);
+          const model = genAI.getGenerativeModel({ model: modelName });
+          const result = await model.generateContent(prompt);
+          aiResponseText = result.response.text();
+          console.log(`[AI Engine] ✅ Success with ${modelName}!`);
+          break; 
+        } catch (err) {
+          console.warn(`[AI Engine] ⚠️ Model ${modelName} failed. Trying next...`);
+        }
       }
 
-      const recentAvg = assignments.slice(0, 3).reduce((a, b) => a + b, 0) / Math.min(3, assignments.length);
-      const olderAvg = assignments.slice(3, 6).reduce((a, b) => a + b, 0) / Math.min(3, assignments.length - 3);
+      if (aiResponseText) {
+        try {
+          const firstBraceIndex = aiResponseText.indexOf('{');
+          const lastBraceIndex = aiResponseText.lastIndexOf('}');
+          
+          if (firstBraceIndex === -1 || lastBraceIndex === -1) {
+              throw new Error("Gemini returned an invalid JSON format.");
+          }
+          
+          const cleanJsonString = aiResponseText.substring(firstBraceIndex, lastBraceIndex + 1);
+          const aiData = JSON.parse(cleanJsonString);
 
-      if (recentAvg > olderAvg + 5) return 'improving';
-      if (recentAvg < olderAvg - 5) return 'declining';
-      return 'stable';
+          const combinedContent = `${aiData.ai_intro}\n\n${aiData.prerequisites_note ? `💡 පදනම් සටහන: ${aiData.prerequisites_note}\n\n` : ''}${dbResources.content}`;
+
+          return {
+            student_id, subject: weak_subject, section: weak_section, grade_level,
+            content: combinedContent,
+            resources: {
+              db_materials: dbResources.resources,
+              activities: aiData.activities,
+              micro_quiz: aiData.micro_quiz,
+              online_resources: onlineResources,
+              graph_prerequisites: prerequisites
+            },
+            activities: aiData.activities,
+            strategies: aiData.strategies,
+            estimatedDuration: "2-4 weeks"
+          };
+        } catch (jsonErr) {
+          console.error("❌ Failed to parse Gemini JSON:", jsonErr.message);
+        }
+      }
     }
 
-    const recentAvg = scores.slice(0, 3).reduce((a, b) => a + b, 0) / Math.min(3, scores.length);
-    const olderAvg = scores.slice(3, 6).reduce((a, b) => a + b, 0) / Math.min(3, scores.length - 3);
-
-    if (recentAvg > olderAvg + 5) return 'improving';
-    if (recentAvg < olderAvg - 5) return 'declining';
-    return 'stable';
-  } catch (error) {
-    console.error('Error calculating improvement trend:', error);
-    return 'stable';
-  }
-};
-
-/**
- * Evaluate learning path effectiveness
- */
-const evaluateEffectiveness = async (studentId, learningPathId) => {
-  try {
-    // Get all progress for this learning path
-    const progressData = await db.query(
-      `SELECT * FROM progress_tracking 
-       WHERE student_id = $1 AND learning_path_id = $2 
-       ORDER BY recorded_at ASC`,
-      [studentId, learningPathId]
-    );
-
-    if (progressData.rows.length === 0) {
-      return {
-        effectiveness: 'unknown',
-        score: 0,
-        metrics: {}
-      };
-    }
-
-    // Calculate metrics
-    const scores = progressData.rows
-      .map(p => parseFloat(p.assessment_score) || parseFloat(p.assignment_result) || 0)
-      .filter(s => s > 0);
-
-    const taskCompletionRate = (progressData.rows.filter(p => p.task_completed).length / progressData.rows.length) * 100;
-    
-    const initialScore = scores.length > 0 ? scores[0] : 0;
-    const finalScore = scores.length > 0 ? scores[scores.length - 1] : 0;
-    const improvement = finalScore - initialScore;
-    const averageScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
-
-    // Calculate trend
-    const trend = await calculateImprovementTrend(studentId, learningPathId);
-
-    // Determine effectiveness
-    let effectiveness = 'moderate';
-    let effectivenessScore = 50;
-
-    if (improvement > 15 && taskCompletionRate > 70 && trend === 'improving') {
-      effectiveness = 'high';
-      effectivenessScore = 85;
-    } else if (improvement > 10 && taskCompletionRate > 60) {
-      effectiveness = 'good';
-      effectivenessScore = 70;
-    } else if (improvement < 0 || taskCompletionRate < 40 || trend === 'declining') {
-      effectiveness = 'low';
-      effectivenessScore = 30;
-    }
-
+    // 4. Fallback System
+    console.log("⚠️ Using Rule-Based Fallback System");
+    const activities = [
+      { title: `Basic Concepts (${grade_level})`, type: "Written", description: `${weak_section} කොටස සිසුවාට පැහැදිලි කරන්න.`, estimatedTime: '30 mins' },
+      { title: `Practical Training`, type: "Practical", description: `පන්ති කාමරයේ ඇති දේවල් යොදාගෙන සිසුවාට ප්‍රායෝගිකව උගන්වන්න.`, estimatedTime: '20 mins' }
+    ];
     return {
-      effectiveness,
-      score: effectivenessScore,
-      metrics: {
-        initialScore,
-        finalScore,
-        improvement,
-        averageScore,
-        taskCompletionRate,
-        trend,
-        totalRecords: progressData.rows.length
-      },
-      recommendations: getEffectivenessRecommendations(effectiveness, improvement, taskCompletionRate, trend)
+      student_id, subject: weak_subject, section: weak_section, grade_level,
+      content: `ආදරණීය ගුරුතුමනි/ගුරුතුමියනි, මෙම සිසුවාට ${weak_subject} විෂයයේ ${weak_section} කොටස ඉගැන්වීම සඳහා පහත පියවර අනුගමනය කරන්න.\n\n${graphInsight}\n\n${dbResources.content}`,
+      resources: { db_materials: dbResources.resources, activities: activities, micro_quiz: [], online_resources: onlineResources, graph_prerequisites: prerequisites },
+      activities: activities, strategies: [{ title: 'මාර්ගගත අධ්‍යයනය', description: 'YouTube සහ e-Thaksalawa සබැඳි භාවිතා කරන්න.' }], estimatedDuration: "2-4 weeks"
     };
-  } catch (error) {
-    console.error('Error evaluating effectiveness:', error);
-    return {
-      effectiveness: 'unknown',
-      score: 0,
-      metrics: {},
-      error: error.message
-    };
-  }
+
+  } catch (error) { throw error; }
 };
 
-/**
- * Get recommendations based on effectiveness evaluation
- */
-const getEffectivenessRecommendations = (effectiveness, improvement, completionRate, trend) => {
-  const recommendations = [];
-
-  if (effectiveness === 'low' || trend === 'declining') {
-    recommendations.push({
-      type: 'adjust_path',
-      title: 'ඉගෙනුම් මාර්ගය සකස් කිරීම',
-      description: 'වර්තමාන ඉගෙනුම් මාර්ගය ඵලදායී නොවන බැවින්, විකල්ප ප්‍රවේශයක් සලකා බලන්න.',
-      priority: 'high'
-    });
-
-    if (completionRate < 50) {
-      recommendations.push({
-        type: 'increase_support',
-        title: 'සහාය වැඩි කිරීම',
-        description: 'කාර්ය සම්පූර්ණ කිරීමේ අනුපාතය අඩු බැවින්, වැඩි සහාය සැලසීම අවශ්‍ය වේ.',
-        priority: 'high'
-      });
-    }
-  } else if (effectiveness === 'high' || trend === 'improving') {
-    recommendations.push({
-      type: 'continue_path',
-      title: 'ඉගෙනුම් මාර්ගය දිගටම කරගෙන යාම',
-      description: 'වර්තමාන ඉගෙනුම් මාර්ගය ඵලදායී වන බැවින්, එය දිගටම කරගෙන යන්න.',
-      priority: 'low'
-    });
-  }
-
-  if (improvement < 5 && completionRate > 60) {
-    recommendations.push({
-      type: 'increase_difficulty',
-      title: 'දුෂ්කරතාවය වැඩි කිරීම',
-      description: 'සිසුවා කාර්යයන් සම්පූර්ණ කරන නමුත් ප්‍රගතිය සීමිත බැවින්, වැඩි අභියෝග සැලසීම සලකා බලන්න.',
-      priority: 'medium'
-    });
-  }
-
-  return recommendations;
-};
-
-module.exports = {
-  generatePersonalizedLearningPath,
-  calculateImprovementTrend,
-  evaluateEffectiveness,
-  analyzeLearningProfile
-};
-
+module.exports = { generatePersonalizedLearningPath };
