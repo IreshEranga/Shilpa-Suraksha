@@ -1,15 +1,20 @@
 // Try to load TensorFlow.js Node.js bindings, fallback to CPU version
-let tf;
-let useNodeBackend = false;
-try {
-  tf = require('@tensorflow/tfjs-node');
-  useNodeBackend = true;
-  // The file system handler is automatically registered when requiring @tensorflow/tfjs-node
-  console.log('✓ Using TensorFlow.js Node.js backend (with file system support)');
-} catch (error) {
-  console.warn('TensorFlow.js Node.js bindings not available, using CPU backend');
-  console.warn('Error:', error.message);
-  tf = require('@tensorflow/tfjs');
+const tfInitializer = require('./tfInitializer');
+const { buildExplainabilityPackage } = require('./explainability');
+
+// Ensure TensorFlow is initialized
+const { tf: tfInstance, backendInfo } = tfInitializer.initializeTensorFlow({ silent: true });
+
+let tf = tfInstance;
+let useNodeBackend = backendInfo.useNodeBindings;
+
+if (backendInfo.error) {
+  console.warn(`⚠ TensorFlow warning at startup: ${backendInfo.error}`);
+  console.warn('  Emotion analysis will be ~10-50x slower.');
+  console.warn('  Fix: npm install --build-from-source @tensorflow/tfjs-node');
+  console.warn('  Or run: node scripts/diagnoseTensorFlow.js for more info');
+} else {
+  console.log(`✓ Emotion analysis using TensorFlow backend: ${backendInfo.name}`);
 }
 
 const sharp = require('sharp');
@@ -25,6 +30,8 @@ const MODEL_SAVE_PATH = path.join(__dirname, '../../models/emotion-model');
 const EMOTION_META_PATH = path.join(MODEL_SAVE_PATH, 'meta.json');
 const MOBILENET_IMAGE_SIZE = 224;
 const MOBILENET_EMBEDDING = 'conv_preds';
+const DEFAULT_IG_STEPS = 8;
+const DEFAULT_MOBILENET_IG_STEPS = 8;
 
 const saveLayersModelToFsDir = async (layersModel, dirPath) => {
   // Works even without tfjs-node (no file:// save handler)
@@ -335,6 +342,25 @@ const loadImageTensor = async (imagePath, targetSize, augment = false) => {
 
 // Backward-compatible helper for existing CNN path
 const preprocessImage = async (imagePath, augment = false) => loadImageTensor(imagePath, IMAGE_SIZE, augment);
+
+const toFixedMetric = (value, digits = 4) => {
+  if (!Number.isFinite(value)) return 0;
+  return Number(value.toFixed(digits));
+};
+
+const getPredictTensorFactory = async (trainedType) => {
+  if (trainedType === 'mobilenet') {
+    const mobileNet = await getMobileNet();
+    return (inputTensor) => tf.tidy(() => {
+      const emb = mobileNet.infer(inputTensor, MOBILENET_EMBEDDING);
+      const batchSize = inputTensor.shape[0] || 1;
+      const flat = emb.reshape([batchSize, emb.size / batchSize]);
+      return model.predict(flat);
+    });
+  }
+
+  return (inputTensor) => model.predict(inputTensor);
+};
 
 // Simple rule-based emotion detection (fallback when model not trained)
 const simpleEmotionDetection = async (imagePath) => {
@@ -901,8 +927,13 @@ const trainEmotionModelWithMobileNet = async (maxMinutes = 20) => {
 };
 
 // Analyze handwriting/drawing image
-const analyzeHandwriting = async (imagePath) => {
+const analyzeHandwriting = async (imagePath, options = {}) => {
+  let inputTensor = null;
   try {
+    const explainRequested = options?.explain !== false;
+    const explainSteps = options?.explainSteps;
+    let explain = null;
+
     // Check if model is trained (has saved weights)
     const modelPath = path.join(MODEL_SAVE_PATH, 'model.json');
     const isTrained = fs.existsSync(modelPath);
@@ -916,6 +947,20 @@ const analyzeHandwriting = async (imagePath) => {
       console.log(`📁 Looking for model at: ${modelPath}`);
       const result = await simpleEmotionDetection(imagePath);
       console.log(`🔍 Fallback result: ${result.emotion} (${(result.confidence * 100).toFixed(1)}% confidence)`);
+      if (explainRequested) {
+        result.explain = {
+          targetClass: result.emotion,
+          targetScore: toFixedMetric(result.confidence),
+          method: 'unavailable_model_not_trained',
+          explanationMethod: 'unavailable_model_not_trained',
+          heatmapPngBase64: null,
+          encodedHeatmapPngBase64: null,
+          overlayHeatmapPngBase64: null,
+          gridOverlayPngBase64: null,
+          gridHeatmapPngBase64: null,
+          factors: null
+        };
+      }
       return result;
     }
 
@@ -924,29 +969,15 @@ const analyzeHandwriting = async (imagePath) => {
       await initializeModel();
     }
 
+    inputTensor = trainedType === 'mobilenet'
+      ? await loadImageTensor(imagePath, MOBILENET_IMAGE_SIZE, false)
+      : await preprocessImage(imagePath);
+    const predictTensor = await getPredictTensorFactory(trainedType);
+
     let probabilities;
-
-    if (trainedType === 'mobilenet') {
-      // MobileNet transfer-learning inference: embed -> classifier head
-      const mobileNet = await getMobileNet();
-      const imgTensor = await loadImageTensor(imagePath, MOBILENET_IMAGE_SIZE, false);
-      const emb = mobileNet.infer(imgTensor, MOBILENET_EMBEDDING);
-      const flat = emb.reshape([1, emb.size]);
-      const prediction = model.predict(flat);
-      probabilities = await prediction.data();
-
-      imgTensor.dispose();
-      emb.dispose();
-      flat.dispose();
-      prediction.dispose();
-    } else {
-      // CNN inference (legacy)
-      const imageTensor = await preprocessImage(imagePath);
-      const prediction = model.predict(imageTensor);
-      probabilities = await prediction.data();
-      imageTensor.dispose();
-      prediction.dispose();
-    }
+    const prediction = predictTensor(inputTensor);
+    probabilities = await prediction.data();
+    prediction.dispose();
 
     // Get emotion with highest probability
     let maxIndex = 0;
@@ -979,7 +1010,41 @@ const analyzeHandwriting = async (imagePath) => {
       acc[emo] = probabilities[idx];
       return acc;
     }, {});
-    
+
+    if (explainRequested) {
+      try {
+        const resolvedExplainSteps = Number.isFinite(Number(explainSteps))
+          ? Number(explainSteps)
+          : (trainedType === 'mobilenet' ? DEFAULT_MOBILENET_IG_STEPS : DEFAULT_IG_STEPS);
+        console.log(`Generating explanation...(${trainedType}`);
+
+        const imageBuffer = fs.readFileSync(imagePath);
+        const inputSizeForEdits = trainedType === 'mobilenet' ? MOBILENET_IMAGE_SIZE : IMAGE_SIZE;
+        explain = await buildExplainabilityPackage({
+          tf,
+          inputTensor,
+          predictTensor,
+          imageBuffer,
+          targetClassIndex: maxIndex,
+          targetClassLabel: emotion,
+          targetScore: confidence,
+          inputSizeForEdits,
+          explainSteps: resolvedExplainSteps
+        });
+
+      } catch (explainError) {
+        console.warn('Explain mode failed:', explainError.message);
+        explain = {
+          target_class: emotion,
+          target_score: toFixedMetric(confidence),
+          method: 'explain_failed',
+          explanation_text: `Explanation failed: ${explainError.message}`,
+          where_the_model_looked: null,
+          what_the_model_used: null
+        };
+      }
+    }
+
     return {
       emotion,
       confidence,
@@ -988,7 +1053,8 @@ const analyzeHandwriting = async (imagePath) => {
       probabilities: allProbabilities,
       isTrained: isTrained,
       method: trainedType === 'mobilenet' ? 'mobilenet_transfer' : 'cnn',
-      warning: !isTrained ? 'Model is not trained - predictions are unreliable' : undefined
+      warning: !isTrained ? 'Model is not trained - predictions are unreliable' : undefined,
+      explain
     };
   } catch (error) {
     console.error('Error analyzing handwriting:', error);
@@ -999,6 +1065,8 @@ const analyzeHandwriting = async (imagePath) => {
       isWeak: false,
       message: 'Unable to analyze image'
     };
+  } finally {
+    if (inputTensor) inputTensor.dispose();
   }
 };
 
@@ -1667,10 +1735,10 @@ module.exports = {
   initializeModel,
   trainModel,
   analyzeHandwriting,
+  // analyzeHandwritingExplain,
   // Handwriting recognition from JSON
   initializeHandwritingModel,
   trainHandwritingModel,
   analyzeHandwritingFromFeatures,
   loadHandwritingData
 };
-

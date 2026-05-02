@@ -14,7 +14,11 @@
     "assign-students": "node scripts/assignStudentsToTeacher.js",
     "check-data": "node scripts/checkTeacherData.js",
     "clear-db": "node scripts/clearDatabase.js",
-    "reset-db": "node scripts/resetDatabase.js"
+    "reset-db": "node scripts/resetDatabase.js",
+    "test-explain": "node scripts/testExplainInference.js",
+    "test-tensorflow": "node scripts/diagnoseTensorFlow.js",
+    "optimize": "node scripts/optimizeTensorFlow.js",
+    "benchmark": "node scripts/benchmarkTensorFlow.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -36,7 +40,7 @@
     "xlsx": "^0.18.5"
   },
   "optionalDependencies": {
-    "@tensorflow/tfjs-node": "^4.11.0"
+    "@tensorflow/tfjs-node": "^4.22.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

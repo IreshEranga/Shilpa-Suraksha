@@ -9,7 +9,8 @@ const BehavioralRecords = ({ studentId }) => {
     behavior_type: 'neutral',
     description: '',
     category: '',
-    severity: 'medium'
+    severity: 'medium',
+    explainSteps: 1024
   });
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -60,7 +61,7 @@ const BehavioralRecords = ({ studentId }) => {
     try {
       const formData = new FormData();
       formData.append('image', selectedImage);
-
+      
       const response = await api.post('/ml/analyze-student-face', formData);
 
       const analysis = response.data;
@@ -237,11 +238,37 @@ const BehavioralRecords = ({ studentId }) => {
                   <p><strong>Emotion:</strong> <span style={{ textTransform: 'capitalize' }}>{mlAnalysis.emotion}</span></p>
                   <p><strong>Confidence:</strong> {(mlAnalysis.confidence * 100).toFixed(1)}%</p>
                   <p><strong>Behavior Type:</strong> <span style={{ textTransform: 'capitalize' }}>{mlAnalysis.behavior_type}</span></p>
-                  <p><strong>Severity:</strong> <span style={{ textTransform: 'capitalize' }}>{mlAnalysis.severity}</span></p>
+                  <p> <span style={{ textTransform: 'capitalize' }}>{mlAnalysis.severity}</span></p>
                   {mlAnalysis.category && (
                     <p><strong>Category:</strong> <span style={{ textTransform: 'capitalize' }}>{mlAnalysis.category.replace(/_/g, ' ')}</span></p>
                   )}
+                  {mlAnalysis.explain && (
+                    <p>
+                      <strong>Explain: </strong>
+                      <span>
+                        {mlAnalysis.explain.explanationText}
+                      </span>
+                    </p>
+                  )}
                 </div>
+                {mlAnalysis.explain?.supportHeatmapPngBase64 && (
+  <div style={{ marginTop: '15px' }}>
+    <p><strong>Model Attention Heatmap:</strong></p>
+    <img
+      src={`data:image/png;base64,${mlAnalysis.explain.supportHeatmapPngBase64}`}
+      alt="Attention Heatmap"
+      style={{
+        width: '100%',
+        maxWidth: '300px',
+        borderRadius: '6px',
+        border: '1px solid #ccc'
+      }}
+    />
+    <p style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>
+      Red areas indicate strong positive contribution to the predicted emotion.
+    </p>
+  </div>
+)}
               </div>
             )}
           </div>
