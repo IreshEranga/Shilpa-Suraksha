@@ -928,6 +928,7 @@ const trainEmotionModelWithMobileNet = async (maxMinutes = 20) => {
 
 // Analyze handwriting/drawing image
 const analyzeHandwriting = async (imagePath, options = {}) => {
+  console.log("drawing image uploaded!");
   let inputTensor = null;
   try {
     const explainRequested = options?.explain !== false;
@@ -1647,6 +1648,7 @@ const evaluateHandwritingModelKFold = async (data, k = 5, opts = {}) => {
 
 // Analyze handwriting from feature data
 const analyzeHandwritingFromFeatures = async (features) => {
+  console.log("handwriting image uploaded!");
   try {
     if (!handwritingModel) {
       await initializeHandwritingModel();
