@@ -1,86 +1,206 @@
+/* === SchoolRegistration.css === */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #fdf8f2;
+  --surface: #ffffff;
+  --terracotta: #c7522a;
+  --terracotta-dark: #a03e18;
+  --gold: #d4a017;
+  --teal: #2a7d6f;
+  --text-primary: #1a1008;
+  --text-secondary: #6b5040;
+  --text-muted: #9e8070;
+  --border: #e8d8c8;
+  --error: #c7345a;
+  --error-bg: #fff0f4;
+  --shadow: rgba(199, 82, 42, 0.12);
+  --radius: 16px;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { font-family: var(--font-body); background: var(--bg); color: var(--text-primary); }
+
+/* Page layout */
 .registration-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 40px 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background: var(--bg);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 48px 5% 80px;
+  position: relative;
+}
+
+/* Decorative background */
+.registration-container::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 700px 500px at 90% 10%, rgba(212,160,23,0.06), transparent),
+    radial-gradient(ellipse 500px 400px at 5% 90%, rgba(199,82,42,0.06), transparent);
 }
 
 .registration-card {
-  background: white;
-  padding: 40px;
-  border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-  width: 100%;
-  max-width: 800px;
+  position: relative; z-index: 1;
+  width: 100%; max-width: 720px;
+  background: var(--surface); border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.07);
+  overflow: hidden;
 }
 
+/* Card header */
 .registration-header {
-  text-align: center;
-  margin-bottom: 30px;
+  padding: 36px 40px 28px;
+  background: linear-gradient(135deg, #1e0d04 0%, #7a2e0a 60%, #c7522a 100%);
+  position: relative; overflow: hidden;
+}
+
+.registration-header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent, transparent 20px,
+    rgba(255,255,255,0.03) 20px,
+    rgba(255,255,255,0.03) 21px
+  );
 }
 
 .registration-header h2 {
-  color: #333;
-  margin-bottom: 10px;
+  font-family: var(--font-display); font-size: 2rem;
+  font-weight: 700; color: #fff; letter-spacing: -0.02em;
+  margin-bottom: 6px; position: relative;
 }
 
 .registration-header p {
-  color: #666;
+  font-size: 0.9rem; color: rgba(255,255,255,0.7);
+  position: relative;
 }
 
+/* Progress bar */
+.registration-header::after {
+  content: 'SCHOOL REGISTRATION';
+  position: absolute; right: 32px; top: 50%; transform: translateY(-50%);
+  font-size: 0.65rem; letter-spacing: 0.15em; font-weight: 700;
+  color: rgba(255,255,255,0.2); writing-mode: vertical-rl;
+}
+
+/* Form */
+form { padding: 0 40px 36px; }
+
+/* Form sections */
 .form-section {
-  margin-bottom: 30px;
-  padding-bottom: 30px;
-  border-bottom: 1px solid #eee;
+  margin: 32px 0;
+  padding: 28px;
+  background: var(--bg);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  position: relative;
 }
 
-.form-section:last-of-type {
-  border-bottom: none;
+.form-section::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--terracotta); border-radius: 3px 3px 0 0;
+  opacity: 0.5;
 }
 
 .form-section h3 {
-  color: #667eea;
-  margin-bottom: 20px;
-  font-size: 1.2rem;
+  font-family: var(--font-display); font-size: 1.1rem;
+  font-weight: 700; color: var(--text-primary);
+  margin-bottom: 20px; letter-spacing: -0.01em;
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
+/* Second section gets a different accent */
+.form-section:nth-child(2)::before { background: var(--gold); }
+
+.form-section:nth-child(2) h3 { color: var(--text-secondary); }
+
+/* Form groups */
+.form-group { margin-bottom: 18px; }
 
 .form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 500;
-  color: #333;
+  display: block; margin-bottom: 7px;
+  font-size: 0.855rem; font-weight: 600;
+  color: var(--text-primary);
 }
+
+.input {
+  width: 100%; padding: 11px 14px;
+  border: 1.5px solid var(--border); border-radius: 9px;
+  background: var(--surface); color: var(--text-primary);
+  font-family: var(--font-body); font-size: 0.925rem;
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: none;
+}
+
+.input:focus {
+  border-color: var(--terracotta);
+  box-shadow: 0 0 0 3px rgba(199, 82, 42, 0.1);
+}
+
+.input::placeholder { color: var(--text-muted); }
+
+textarea.input { resize: vertical; min-height: 80px; line-height: 1.6; }
 
 .form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
 }
 
-@media (max-width: 768px) {
-  .form-row {
-    grid-template-columns: 1fr;
-  }
+/* Error */
+.error-message {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 14px; margin: 20px 0;
+  border-radius: 9px;
+  background: var(--error-bg); color: var(--error);
+  border: 1px solid rgba(199, 52, 90, 0.2);
+  font-size: 0.875rem; font-weight: 500;
 }
 
+/* Submit button */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 24px; border-radius: 9px;
+  font-family: var(--font-body); font-size: 0.9rem;
+  font-weight: 600; cursor: pointer; border: none;
+  text-decoration: none; transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--terracotta); color: #fff;
+  width: 100%; justify-content: center;
+  padding: 14px; font-size: 1rem;
+  box-shadow: 0 4px 16px var(--shadow);
+  margin-top: 4px;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--terracotta-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px var(--shadow);
+}
+
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Footer */
 .form-footer {
-  text-align: center;
-  margin-top: 20px;
-  color: #666;
+  margin-top: 20px; text-align: center;
+  font-size: 0.875rem; color: var(--text-muted);
 }
 
-.form-footer a {
-  color: #667eea;
-  text-decoration: none;
-}
+.form-footer a { color: var(--terracotta); text-decoration: none; font-weight: 600; }
+.form-footer a:hover { text-decoration: underline; }
 
-.form-footer a:hover {
-  text-decoration: underline;
+/* Responsive */
+@media (max-width: 640px) {
+  .registration-container { padding: 24px 4% 60px; }
+  form { padding: 0 20px 28px; }
+  .registration-header { padding: 28px 20px; }
+  .registration-header::after { display: none; }
+  .form-section { padding: 20px; }
+  .form-row { grid-template-columns: 1fr; }
 }
-
