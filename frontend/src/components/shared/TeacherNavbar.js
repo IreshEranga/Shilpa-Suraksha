@@ -11,7 +11,7 @@ const TeacherNavbar = ({ user, onLogout }) => {
     { path: '/teacher/records', label: 'Records', icon: '📝' },
     { path: '/teacher/guidance', label: 'Guidance', icon: '⚠️' },
     { path: '/teacher/learning-paths', label: 'Learning Paths', icon: '📚' },
-    { path: '/teacher/improvement-dashboard', label: 'Improvement', icon: '📈' }
+    { path: '/teacher/improvement', label: 'Improvement', icon: '📈' }
   ];
 
   return (
