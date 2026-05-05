@@ -45,7 +45,11 @@ const GuidancePage = ({ user, onLogout }) => {
     return riskFactors;
   };
 
-  const toTitle = (s) => (s || '').toString().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const toTitle = (s) =>
+    (s || "")
+      .toString()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
 
   const renderRiskDetails = (student) => {
     const rf = normalizeRiskFactors(student.risk_factors);
