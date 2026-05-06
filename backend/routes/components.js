@@ -1,15 +1,17 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { authenticate, requireAdminOrTeacher } = require('../middleware/auth');
-const db = require('../config/database');
-const { earlyWarningSystem } = require('../ml/earlyWarningSystem');
-const { emotionBehavioralAnalysis } = require('../ml/emotionBehavioralAnalysis');
-const { generateRecommendations } = require('../ml/recommendationSystem');
-const interventionOrchestrator = require('../ml/interventionOrchestrator');
+const { authenticate, requireAdminOrTeacher } = require("../middleware/auth");
+const db = require("../config/database");
+const { earlyWarningSystem } = require("../ml/earlyWarningSystem");
+const {
+  emotionBehavioralAnalysis,
+} = require("../ml/emotionBehavioralAnalysis");
+const { generateRecommendations } = require("../ml/recommendationSystem");
+const interventionOrchestrator = require("../ml/interventionOrchestrator");
 
 // Helper function to get higher risk level
 const getHigherRiskLevel = (level1, level2) => {
-  const levels = { 'low': 1, 'medium': 2, 'high': 3, 'critical': 4 };
+  const levels = { low: 1, medium: 2, high: 3, critical: 4 };
   return levels[level1] >= levels[level2] ? level1 : level2;
 };
 
@@ -18,42 +20,46 @@ router.use(authenticate);
 router.use(requireAdminOrTeacher);
 
 // Component 1: Early Warning System
-router.post('/early-warning', async (req, res) => {
+router.post("/early-warning", async (req, res) => {
   try {
     const { student_id, class_id } = req.body;
-    const teacherId = req.userRole === 'teacher' ? req.userId : null;
+    const teacherId = req.userRole === "teacher" ? req.userId : null;
 
     let studentsToAnalyze = [];
 
     if (student_id) {
       // Analyze single student
-      const student = await db.query('SELECT * FROM students WHERE id = $1', [student_id]);
+      const student = await db.query("SELECT * FROM students WHERE id = $1", [
+        student_id,
+      ]);
       if (student.rows.length === 0) {
-        return res.status(404).json({ error: 'Student not found' });
+        return res.status(404).json({ error: "Student not found" });
       }
       studentsToAnalyze = student.rows;
     } else if (class_id) {
       // Analyze all students in class
       const students = await db.query(
-        'SELECT * FROM students WHERE class_id = $1',
-        [class_id]
+        "SELECT * FROM students WHERE class_id = $1",
+        [class_id],
       );
       studentsToAnalyze = students.rows;
     } else if (teacherId) {
       // Analyze all students in teacher's class
       const classResult = await db.query(
-        'SELECT id FROM classes WHERE teacher_id = $1 LIMIT 1',
-        [teacherId]
+        "SELECT id FROM classes WHERE teacher_id = $1 LIMIT 1",
+        [teacherId],
       );
       if (classResult.rows.length > 0) {
         const students = await db.query(
-          'SELECT * FROM students WHERE class_id = $1',
-          [classResult.rows[0].id]
+          "SELECT * FROM students WHERE class_id = $1",
+          [classResult.rows[0].id],
         );
         studentsToAnalyze = students.rows;
       }
     } else {
-      return res.status(400).json({ error: 'student_id, class_id, or teacher context required' });
+      return res
+        .status(400)
+        .json({ error: "student_id, class_id, or teacher context required" });
     }
 
     const results = [];
@@ -61,18 +67,18 @@ router.post('/early-warning', async (req, res) => {
     for (const student of studentsToAnalyze) {
       // Get academic and attendance data
       const academicData = await db.query(
-        'SELECT * FROM academic_records WHERE student_id = $1',
-        [student.id]
+        "SELECT * FROM academic_records WHERE student_id = $1",
+        [student.id],
       );
 
       const attendanceData = await db.query(
-        'SELECT * FROM attendance_records WHERE student_id = $1 ORDER BY date DESC LIMIT 30',
-        [student.id]
+        "SELECT * FROM attendance_records WHERE student_id = $1 ORDER BY date DESC LIMIT 30",
+        [student.id],
       );
 
       const behavioralData = await db.query(
-        'SELECT * FROM behavioral_records WHERE student_id = $1 ORDER BY observation_date DESC LIMIT 10',
-        [student.id]
+        "SELECT * FROM behavioral_records WHERE student_id = $1 ORDER BY observation_date DESC LIMIT 10",
+        [student.id],
       );
 
       // Run early warning analysis
@@ -80,14 +86,14 @@ router.post('/early-warning', async (req, res) => {
         student_id: student.id,
         academicRecords: academicData.rows,
         attendanceRecords: attendanceData.rows,
-        behavioralRecords: behavioralData.rows
+        behavioralRecords: behavioralData.rows,
       });
 
       if (analysis.isAtRisk) {
         // Check if record exists
         const existing = await db.query(
-          'SELECT id FROM at_risk_students WHERE student_id = $1',
-          [student.id]
+          "SELECT id FROM at_risk_students WHERE student_id = $1",
+          [student.id],
         );
 
         if (existing.rows.length > 0) {
@@ -106,9 +112,9 @@ router.post('/early-warning', async (req, res) => {
               analysis.riskLevel,
               analysis.confidence,
               JSON.stringify(analysis.riskFactors),
-              'early_warning',
-              student.id
-            ]
+              "early_warning",
+              student.id,
+            ],
           );
         } else {
           // Insert new
@@ -121,23 +127,23 @@ router.post('/early-warning', async (req, res) => {
               analysis.riskLevel,
               analysis.confidence,
               JSON.stringify(analysis.riskFactors),
-              'early_warning'
-            ]
+              "early_warning",
+            ],
           );
         }
 
         results.push({
           student_id: student.id,
           student_name: student.name,
-          ...analysis
+          ...analysis,
         });
       }
     }
 
     res.json({
-      message: 'Early warning analysis completed',
+      message: "Early warning analysis completed",
       at_risk_count: results.length,
-      results
+      results,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -145,25 +151,25 @@ router.post('/early-warning', async (req, res) => {
 });
 
 // Component 2: Emotion and Behavioral Analysis
-router.post('/emotion-analysis', async (req, res) => {
+router.post("/emotion-analysis", async (req, res) => {
   try {
     const { student_id, image_path } = req.body;
-    const teacherId = req.userRole === 'teacher' ? req.userId : null;
+    const teacherId = req.userRole === "teacher" ? req.userId : null;
 
     if (!student_id) {
-      return res.status(400).json({ error: 'student_id is required' });
+      return res.status(400).json({ error: "student_id is required" });
     }
 
     // Get student's behavioral records
     const behavioralData = await db.query(
-      'SELECT * FROM behavioral_records WHERE student_id = $1 ORDER BY observation_date DESC',
-      [student_id]
+      "SELECT * FROM behavioral_records WHERE student_id = $1 ORDER BY observation_date DESC",
+      [student_id],
     );
 
     // Get handwriting analysis if image provided
     let emotionAnalysis = null;
     if (image_path) {
-      const { analyzeHandwriting } = require('../ml/handwritingModel');
+      const { analyzeHandwriting } = require("../ml/handwritingModel");
       emotionAnalysis = await analyzeHandwriting(image_path);
     }
 
@@ -171,25 +177,35 @@ router.post('/emotion-analysis', async (req, res) => {
     const analysis = await emotionBehavioralAnalysis({
       student_id,
       behavioralRecords: behavioralData.rows,
-      emotionAnalysis
+      emotionAnalysis,
     });
 
     // Update at-risk students if needed
     if (analysis.isAtRisk) {
       const existing = await db.query(
-        'SELECT * FROM at_risk_students WHERE student_id = $1',
-        [student_id]
+        "SELECT * FROM at_risk_students WHERE student_id = $1",
+        [student_id],
       );
 
       if (existing.rows.length > 0) {
         const existingRecord = existing.rows[0];
-        const newRiskType = existingRecord.risk_type === 'academic' ? 'combined' : 'behavioral';
-        const newRiskLevel = getHigherRiskLevel(existingRecord.risk_level, analysis.riskLevel);
-        const newConfidence = Math.max(existingRecord.confidence_score || 0, analysis.confidence);
-        const newIdentifiedBy = existingRecord.identified_by === 'early_warning' ? 'both' : 'emotion_analysis';
+        const newRiskType =
+          existingRecord.risk_type === "academic" ? "combined" : "behavioral";
+        const newRiskLevel = getHigherRiskLevel(
+          existingRecord.risk_level,
+          analysis.riskLevel,
+        );
+        const newConfidence = Math.max(
+          existingRecord.confidence_score || 0,
+          analysis.confidence,
+        );
+        const newIdentifiedBy =
+          existingRecord.identified_by === "early_warning"
+            ? "both"
+            : "emotion_analysis";
         const mergedFactors = {
           ...(existingRecord.risk_factors || {}),
-          ...analysis.factors
+          ...analysis.factors,
         };
 
         await db.query(
@@ -207,8 +223,8 @@ router.post('/emotion-analysis', async (req, res) => {
             newConfidence,
             JSON.stringify(mergedFactors),
             newIdentifiedBy,
-            student_id
-          ]
+            student_id,
+          ],
         );
       } else {
         await db.query(
@@ -216,12 +232,12 @@ router.post('/emotion-analysis', async (req, res) => {
            VALUES ($1, $2, $3, $4, $5, $6)`,
           [
             student_id,
-            'behavioral',
+            "behavioral",
             analysis.riskLevel,
             analysis.confidence,
             JSON.stringify(analysis.factors),
-            'emotion_analysis'
-          ]
+            "emotion_analysis",
+          ],
         );
       }
     }
@@ -233,9 +249,9 @@ router.post('/emotion-analysis', async (req, res) => {
 });
 
 // Get Guidance Page (at-risk students)
-router.get('/guidance-page', async (req, res) => {
+router.get("/guidance-page", async (req, res) => {
   try {
-    const teacherId = req.userRole === 'teacher' ? req.userId : null;
+    const teacherId = req.userRole === "teacher" ? req.userId : null;
     const schoolId = req.schoolId;
 
     let query = `
@@ -287,24 +303,28 @@ router.get('/guidance-page', async (req, res) => {
 });
 
 // Component 3: Intelligent Recommendation System
-router.post('/generate-recommendations', async (req, res) => {
+router.post("/generate-recommendations", async (req, res) => {
   try {
     const { student_id, weak_subject, weak_section } = req.body;
 
     if (!student_id || !weak_subject || !weak_section) {
-      return res.status(400).json({ error: 'student_id, weak_subject, and weak_section are required' });
+      return res.status(400).json({
+        error: "student_id, weak_subject, and weak_section are required",
+      });
     }
 
     // Get student data
-    const student = await db.query('SELECT * FROM students WHERE id = $1', [student_id]);
+    const student = await db.query("SELECT * FROM students WHERE id = $1", [
+      student_id,
+    ]);
     if (student.rows.length === 0) {
-      return res.status(404).json({ error: 'Student not found' });
+      return res.status(404).json({ error: "Student not found" });
     }
 
     // Get academic history
     const academicData = await db.query(
-      'SELECT * FROM academic_records WHERE student_id = $1 AND subject = $2',
-      [student_id, weak_subject]
+      "SELECT * FROM academic_records WHERE student_id = $1 AND subject = $2",
+      [student_id, weak_subject],
     );
 
     // Generate recommendations
@@ -312,13 +332,13 @@ router.post('/generate-recommendations', async (req, res) => {
       student_id,
       weak_subject,
       weak_section,
-      academicHistory: academicData.rows
+      academicHistory: academicData.rows,
     });
 
     // Create or update learning path
     const weakStudent = await db.query(
-      'SELECT id FROM weak_students WHERE student_id = $1 LIMIT 1',
-      [student_id]
+      "SELECT id FROM weak_students WHERE student_id = $1 LIMIT 1",
+      [student_id],
     );
 
     let weakStudentId = null;
@@ -326,8 +346,8 @@ router.post('/generate-recommendations', async (req, res) => {
       weakStudentId = weakStudent.rows[0].id;
     } else {
       const newWeakStudent = await db.query(
-        'INSERT INTO weak_students (student_id, weak_subject, weak_section) VALUES ($1, $2, $3) RETURNING id',
-        [student_id, weak_subject, weak_section]
+        "INSERT INTO weak_students (student_id, weak_subject, weak_section) VALUES ($1, $2, $3) RETURNING id",
+        [student_id, weak_subject, weak_section],
       );
       weakStudentId = newWeakStudent.rows[0].id;
     }
@@ -342,13 +362,13 @@ router.post('/generate-recommendations', async (req, res) => {
         weak_subject,
         weak_section,
         recommendations.content,
-        JSON.stringify(recommendations.resources)
-      ]
+        JSON.stringify(recommendations.resources),
+      ],
     );
 
     res.json({
       learning_path: learningPath.rows[0],
-      recommendations
+      recommendations,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -356,9 +376,9 @@ router.post('/generate-recommendations', async (req, res) => {
 });
 
 // Component 4: Intervention Orchestrator
-router.get('/improvement-dashboard', async (req, res) => {
+router.get("/improvement-dashboard", async (req, res) => {
   try {
-    const teacherId = req.userRole === 'teacher' ? req.userId : null;
+    const teacherId = req.userRole === "teacher" ? req.userId : null;
     const schoolId = req.schoolId;
 
     // Get clusters
@@ -395,7 +415,7 @@ router.get('/improvement-dashboard', async (req, res) => {
       params.push(schoolId);
     }
 
-    clustersQuery += ' GROUP BY sc.id ORDER BY sc.created_at DESC';
+    clustersQuery += " GROUP BY sc.id ORDER BY sc.created_at DESC";
 
     const clusters = await db.query(clustersQuery, params);
 
@@ -426,9 +446,12 @@ router.get('/improvement-dashboard', async (req, res) => {
       interventionParams.push(schoolId);
     }
 
-    interventionsQuery += ' ORDER BY ih.created_at DESC LIMIT 50';
+    interventionsQuery += " ORDER BY ih.created_at DESC LIMIT 50";
 
-    const interventions = await db.query(interventionsQuery, interventionParams);
+    const interventions = await db.query(
+      interventionsQuery,
+      interventionParams,
+    );
 
     // Get progress trends
     let progressQuery = `
@@ -461,7 +484,7 @@ router.get('/improvement-dashboard', async (req, res) => {
       progressParams.push(schoolId);
     }
 
-    progressQuery += ' ORDER BY pt.recorded_at DESC LIMIT 100';
+    progressQuery += " ORDER BY pt.recorded_at DESC LIMIT 100";
 
     const progress = await db.query(progressQuery, progressParams);
 
@@ -510,14 +533,14 @@ router.get('/improvement-dashboard', async (req, res) => {
       pointsParams.push(schoolId);
     }
 
-    pointsQuery += ' ORDER BY sca.cluster_id, s.name';
+    pointsQuery += " ORDER BY sca.cluster_id, s.name";
     const clusterPoints = await db.query(pointsQuery, pointsParams);
 
     res.json({
       clusters: clusters.rows,
       interventions: interventions.rows,
       progress: progress.rows,
-      clusterPoints: clusterPoints.rows
+      clusterPoints: clusterPoints.rows,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -525,45 +548,47 @@ router.get('/improvement-dashboard', async (req, res) => {
 });
 
 // Create clusters
-router.post('/create-clusters', async (req, res) => {
+router.post("/create-clusters", async (req, res) => {
   try {
     const { class_id } = req.body;
-    const teacherId = req.userRole === 'teacher' ? req.userId : null;
+    const teacherId = req.userRole === "teacher" ? req.userId : null;
 
-    let studentsQuery = 'SELECT * FROM students';
+    let studentsQuery = "SELECT * FROM students";
     const params = [];
     let paramCount = 0;
 
     if (class_id) {
       paramCount++;
-      studentsQuery += ' WHERE class_id = $' + paramCount;
+      studentsQuery += " WHERE class_id = $" + paramCount;
       params.push(class_id);
     } else if (teacherId) {
       const classResult = await db.query(
-        'SELECT id FROM classes WHERE teacher_id = $1 LIMIT 1',
-        [teacherId]
+        "SELECT id FROM classes WHERE teacher_id = $1 LIMIT 1",
+        [teacherId],
       );
       if (classResult.rows.length > 0) {
         paramCount++;
-        studentsQuery += ' WHERE class_id = $' + paramCount;
+        studentsQuery += " WHERE class_id = $" + paramCount;
         params.push(classResult.rows[0].id);
       } else {
-        return res.json({ message: 'No students found', clusters: [] });
+        return res.json({ message: "No students found", clusters: [] });
       }
     }
 
     const students = await db.query(studentsQuery, params);
 
     if (students.rows.length === 0) {
-      return res.json({ message: 'No students found', clusters: [] });
+      return res.json({ message: "No students found", clusters: [] });
     }
 
     // Run clustering
-    const clusters = await interventionOrchestrator.createClusters(students.rows);
+    const clusters = await interventionOrchestrator.createClusters(
+      students.rows,
+    );
 
     res.json({
-      message: 'Clusters created successfully',
-      clusters
+      message: "Clusters created successfully",
+      clusters,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -571,7 +596,7 @@ router.post('/create-clusters', async (req, res) => {
 });
 
 // Get intervention suggestions
-router.get('/intervention-suggestions', async (req, res) => {
+router.get("/intervention-suggestions", async (req, res) => {
   try {
     const { cluster_id, student_id } = req.query;
 
@@ -579,23 +604,30 @@ router.get('/intervention-suggestions', async (req, res) => {
 
     if (cluster_id) {
       // Get cluster and students
-      const cluster = await db.query('SELECT * FROM student_clusters WHERE id = $1', [cluster_id]);
+      const cluster = await db.query(
+        "SELECT * FROM student_clusters WHERE id = $1",
+        [cluster_id],
+      );
       if (cluster.rows.length > 0) {
         const students = await db.query(
           `SELECT s.* FROM students s
            JOIN student_cluster_assignments sca ON s.id = sca.student_id
            WHERE sca.cluster_id = $1`,
-          [cluster_id]
+          [cluster_id],
         );
-        
+
         const studentCount = students.rows.length;
-        const { suggestGroupInterventions, suggestIndividualInterventions } = require('../ml/interventionOrchestrator');
-        
+        const {
+          suggestGroupInterventions,
+          suggestIndividualInterventions,
+        } = require("../ml/interventionOrchestrator");
+
         // If cluster has 1-2 students, suggest individual interventions
         if (studentCount <= 2) {
           // For small clusters, suggest individual interventions for each student
           for (const student of students.rows) {
-            const individualSuggestions = await suggestIndividualInterventions(student);
+            const individualSuggestions =
+              await suggestIndividualInterventions(student);
             suggestions.push(...individualSuggestions);
           }
           // Also add a note about why individual is recommended
@@ -606,39 +638,46 @@ router.get('/intervention-suggestions', async (req, res) => {
           // For clusters with 3+ students, suggest group interventions
           const groupSuggestions = await suggestGroupInterventions(
             cluster.rows[0],
-            students.rows
+            students.rows,
           );
           suggestions.push(...groupSuggestions);
-          
+
           // For medium-sized groups (3-5), also suggest some individual support options
           if (studentCount >= 3 && studentCount <= 5) {
             suggestions.push({
-              type: 'hybrid',
-              title: 'Hybrid Approach: Group + Individual Support',
+              type: "hybrid",
+              title: "Hybrid Approach: Group + Individual Support",
               description: `This cluster has ${studentCount} students. Consider combining group sessions with periodic individual check-ins for students who need extra support.`,
               activities: [
-                'Weekly group sessions for peer learning',
-                'Bi-weekly individual progress reviews',
-                'Flexible support based on individual needs',
-                'Group activities with breakout individual sessions'
+                "Weekly group sessions for peer learning",
+                "Bi-weekly individual progress reviews",
+                "Flexible support based on individual needs",
+                "Group activities with breakout individual sessions",
               ],
-              duration: '6-8 weeks',
-              frequency: '2 group sessions + 1 individual session per week',
-              expectedOutcome: 'Balanced approach combining peer learning benefits with personalized attention',
-              priority: 'medium'
+              duration: "6-8 weeks",
+              frequency: "2 group sessions + 1 individual session per week",
+              expectedOutcome:
+                "Balanced approach combining peer learning benefits with personalized attention",
+              priority: "medium",
             });
           }
         }
       }
     } else if (student_id) {
       // Get individual suggestions
-      const student = await db.query('SELECT * FROM students WHERE id = $1', [student_id]);
+      const student = await db.query("SELECT * FROM students WHERE id = $1", [
+        student_id,
+      ]);
       if (student.rows.length > 0) {
-        const { suggestIndividualInterventions } = require('../ml/interventionOrchestrator');
+        const {
+          suggestIndividualInterventions,
+        } = require("../ml/interventionOrchestrator");
         suggestions = await suggestIndividualInterventions(student.rows[0]);
       }
     } else {
-      return res.status(400).json({ error: 'cluster_id or student_id required' });
+      return res
+        .status(400)
+        .json({ error: "cluster_id or student_id required" });
     }
 
     res.json({ suggestions });
@@ -647,39 +686,267 @@ router.get('/intervention-suggestions', async (req, res) => {
   }
 });
 
-// Track progress
-router.post('/track-progress', async (req, res) => {
+const normalizeInterventionType = (type) => {
+  if (!type) return "individual";
+  if (type === "group" || type === "individual") return type;
+  if (type === "hybrid") return "group";
+  return "individual";
+};
+
+const buildActivityDescription = (suggestion) => {
+  const parts = [];
+  if (suggestion.title) parts.push(`Title: ${suggestion.title}`);
+  if (suggestion.description)
+    parts.push(`Description: ${suggestion.description}`);
+  if (
+    Array.isArray(suggestion.activities) &&
+    suggestion.activities.length > 0
+  ) {
+    parts.push(`Activities: ${suggestion.activities.join(" | ")}`);
+  }
+  return parts.join("\n");
+};
+
+// Create intervention task(s) from suggestion
+router.post("/intervention-tasks", async (req, res) => {
   try {
-    const { student_id, learning_path_id, assignment_result, task_completed, assessment_score } = req.body;
+    const { cluster_id, student_id, suggestion, start_date } = req.body;
+    const teacherId = req.userRole === "teacher" ? req.userId : null;
+    const schoolId = req.schoolId;
+
+    if (!suggestion || !suggestion.title) {
+      return res
+        .status(400)
+        .json({ error: "suggestion with at least a title is required" });
+    }
+
+    if (!cluster_id && !student_id) {
+      return res
+        .status(400)
+        .json({ error: "cluster_id or student_id is required" });
+    }
+
+    const studentsToAssign = [];
+
+    if (cluster_id) {
+      let clusterStudentsQuery = `
+        SELECT s.id
+        FROM student_cluster_assignments sca
+        JOIN students s ON s.id = sca.student_id
+        JOIN classes c ON c.id = s.class_id
+        WHERE sca.cluster_id = $1
+      `;
+      const clusterParams = [cluster_id];
+      let paramCount = 1;
+
+      if (teacherId) {
+        paramCount++;
+        clusterStudentsQuery += ` AND c.teacher_id = $${paramCount}`;
+        clusterParams.push(teacherId);
+      } else if (schoolId) {
+        paramCount++;
+        clusterStudentsQuery += ` AND EXISTS (
+          SELECT 1 FROM teachers t WHERE t.id = c.teacher_id AND t.school_id = $${paramCount}
+        )`;
+        clusterParams.push(schoolId);
+      }
+
+      const clusterStudents = await db.query(
+        clusterStudentsQuery,
+        clusterParams,
+      );
+      studentsToAssign.push(...clusterStudents.rows.map((r) => r.id));
+    }
+
+    if (student_id) {
+      let studentQuery = `
+        SELECT s.id
+        FROM students s
+        JOIN classes c ON c.id = s.class_id
+        WHERE s.id = $1
+      `;
+      const studentParams = [student_id];
+      let paramCount = 1;
+
+      if (teacherId) {
+        paramCount++;
+        studentQuery += ` AND c.teacher_id = $${paramCount}`;
+        studentParams.push(teacherId);
+      } else if (schoolId) {
+        paramCount++;
+        studentQuery += ` AND EXISTS (
+          SELECT 1 FROM teachers t WHERE t.id = c.teacher_id AND t.school_id = $${paramCount}
+        )`;
+        studentParams.push(schoolId);
+      }
+
+      const studentResult = await db.query(studentQuery, studentParams);
+      if (studentResult.rows.length === 0) {
+        return res
+          .status(403)
+          .json({ error: "Student not found or not accessible" });
+      }
+      studentsToAssign.push(studentResult.rows[0].id);
+    }
+
+    const uniqueStudentIds = [...new Set(studentsToAssign)];
+    if (uniqueStudentIds.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "No eligible students found for this task" });
+    }
+
+    const interventionType = normalizeInterventionType(suggestion.type);
+    const activityDescription = buildActivityDescription(suggestion);
+    const createdTasks = [];
+
+    for (const targetStudentId of uniqueStudentIds) {
+      const inserted = await db.query(
+        `INSERT INTO intervention_history (
+          student_id,
+          cluster_id,
+          intervention_type,
+          activity_description,
+          source_suggestion,
+          assigned_by,
+          start_date,
+          status
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, CURRENT_DATE), 'active')
+        RETURNING *`,
+        [
+          targetStudentId,
+          cluster_id || null,
+          interventionType,
+          activityDescription,
+          JSON.stringify(suggestion),
+          req.userId || null,
+          start_date || null,
+        ],
+      );
+
+      createdTasks.push(inserted.rows[0]);
+    }
+
+    res.status(201).json({
+      message: "Intervention task(s) created successfully",
+      created_count: createdTasks.length,
+      tasks: createdTasks,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update intervention task status/progress
+router.patch("/intervention-tasks/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, effectiveness_score, end_date } = req.body;
+    const teacherId = req.userRole === "teacher" ? req.userId : null;
+    const schoolId = req.schoolId;
+
+    const allowedStatuses = ["active", "completed", "paused", "cancelled"];
+    if (status && !allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: "Invalid status value" });
+    }
+
+    let accessQuery = `
+      SELECT ih.id
+      FROM intervention_history ih
+      JOIN students s ON s.id = ih.student_id
+      JOIN classes c ON c.id = s.class_id
+      WHERE ih.id = $1
+    `;
+    const accessParams = [id];
+    let paramCount = 1;
+
+    if (teacherId) {
+      paramCount++;
+      accessQuery += ` AND c.teacher_id = $${paramCount}`;
+      accessParams.push(teacherId);
+    } else if (schoolId) {
+      paramCount++;
+      accessQuery += ` AND EXISTS (
+        SELECT 1 FROM teachers t WHERE t.id = c.teacher_id AND t.school_id = $${paramCount}
+      )`;
+      accessParams.push(schoolId);
+    }
+
+    const accessible = await db.query(accessQuery, accessParams);
+    if (accessible.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "Task not found or not accessible" });
+    }
+
+    const updateResult = await db.query(
+      `UPDATE intervention_history
+       SET
+         status = COALESCE($1::text, status),
+         effectiveness_score = COALESCE($2::numeric, effectiveness_score),
+         end_date = CASE
+           WHEN $3::date IS NOT NULL THEN $3::date
+           WHEN $1 = 'completed' AND end_date IS NULL THEN CURRENT_DATE
+           ELSE end_date
+         END
+       WHERE id = $4
+       RETURNING *`,
+      [status || null, effectiveness_score || null, end_date || null, id],
+    );
+
+    res.json(updateResult.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Track progress
+router.post("/track-progress", async (req, res) => {
+  try {
+    const {
+      student_id,
+      learning_path_id,
+      assignment_result,
+      task_completed,
+      assessment_score,
+    } = req.body;
 
     if (!student_id) {
-      return res.status(400).json({ error: 'student_id is required' });
+      return res.status(400).json({ error: "student_id is required" });
     }
 
     // Calculate improvement trend
     const previousProgress = await db.query(
-      'SELECT * FROM progress_tracking WHERE student_id = $1 ORDER BY recorded_at DESC LIMIT 1',
-      [student_id]
+      "SELECT * FROM progress_tracking WHERE student_id = $1 ORDER BY recorded_at DESC LIMIT 1",
+      [student_id],
     );
 
-    let improvement_trend = 'stable';
+    let improvement_trend = "stable";
     if (previousProgress.rows.length > 0) {
       const prevScore = previousProgress.rows[0].assessment_score || 0;
       const currentScore = assessment_score || 0;
       if (currentScore > prevScore + 5) {
-        improvement_trend = 'improving';
+        improvement_trend = "improving";
       } else if (currentScore < prevScore - 5) {
-        improvement_trend = 'declining';
+        improvement_trend = "declining";
       }
     } else if (assessment_score && assessment_score > 70) {
-      improvement_trend = 'improving';
+      improvement_trend = "improving";
     }
 
     const result = await db.query(
       `INSERT INTO progress_tracking (student_id, learning_path_id, assignment_result, task_completed, assessment_score, improvement_trend)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [student_id, learning_path_id || null, assignment_result || null, task_completed || false, assessment_score || null, improvement_trend]
+      [
+        student_id,
+        learning_path_id || null,
+        assignment_result || null,
+        task_completed || false,
+        assessment_score || null,
+        improvement_trend,
+      ],
     );
 
     res.status(201).json(result.rows[0]);
@@ -689,4 +956,3 @@ router.post('/track-progress', async (req, res) => {
 });
 
 module.exports = router;
-
