@@ -56,9 +56,14 @@ const db = require('./config/database');
 const os = require('os');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const { initializeTensorFlow, getBackendInfo } = require('./ml/tfInitializer');
 
 // Load environment variables
 dotenv.config();
+
+// Initialize TensorFlow.js early for optimal performance
+console.log('Starting server initialization...');
+const { backendInfo } = initializeTensorFlow({ verbose: true });
 
 const app = express();
 const PORT = process.env.PORT || 5001;
